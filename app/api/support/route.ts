@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 // POST /api/support – send a message
 export async function POST(request: NextRequest) {
   try {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getSessionUser, hasRole } from '@/lib/auth'
 
+export const dynamic = 'force-dynamic'
+
 // GET /api/admin/support/messages - Fetch all support messages for admin
 export async function GET() {
   try {

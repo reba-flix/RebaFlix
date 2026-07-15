@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import { Plus, Pencil, Trash2, Film, Play, TrendingUp, Eye } from 'lucide-react'
+import { Plus, Film, Play, TrendingUp, Eye } from 'lucide-react'
 import { getSessionUser, hasRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { MoviePlaysChart } from '@/components/admin/MoviePlaysChart'
+import { AdminMoviesActions } from '@/components/admin/AdminMoviesActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -157,16 +157,11 @@ export default async function AdminMoviesPage() {
                     {movie.genres.map((g) => g.genre.name).join(', ') || '—'}
                   </td>
                   <td className="py-4 px-6 text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon-sm" asChild>
-                        <Link href={`/admin/movies/${movie.id}/edit`}>
-                          <Pencil className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" size="icon-sm" className="text-red-400 hover:text-red-300">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    <AdminMoviesActions
+                      movieId={movie.id}
+                      movieTitle={movie.title}
+                      type="movie"
+                    />
                   </td>
                 </tr>
               ))}

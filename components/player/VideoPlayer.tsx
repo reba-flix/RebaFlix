@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import Hls from 'hls.js'
 import {
   Captions,
@@ -33,6 +33,19 @@ export function VideoPlayer({ src, poster, title, subtitles = [], onProgress, co
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [error, setError] = useState<string | null>(null)
+  const hasCounted = useRef(false)
+
+  const recordPlay = useCallback(() => {
+    if (!contentId || hasCounted.current) return
+    hasCounted.current = true
+    const endpoint =
+      contentType === 'episode'
+        ? `/api/episodes/${contentId}/play`
+        : contentType === 'series'
+        ? `/api/series/${contentId}/play`
+        : `/api/movies/${contentId}/play`
+    fetch(endpoint, { method: 'POST' }).catch(console.warn)
+  }, [contentId, contentType])
 
   useEffect(() => {
     const video = videoRef.current
@@ -81,18 +94,9 @@ export function VideoPlayer({ src, poster, title, subtitles = [], onProgress, co
 
     if (video.paused) {
       try {
-        setError(null) // Clear any previous error on play attempt
+        setError(null)
         await video.play()
         setPlaying(true)
-        if (contentId) {
-          const endpoint =
-            contentType === 'episode'
-              ? `/api/episodes/${contentId}/play`
-              : contentType === 'series'
-              ? `/api/series/${contentId}/play`
-              : `/api/movies/${contentId}/play`
-          fetch(endpoint, { method: 'POST' }).catch(console.warn)
-        }
       } catch (err) {
         console.warn("Playback failed:", err)
         setError("Failed to start playback. The link might be broken or the format is unsupported by your browser.")
@@ -133,7 +137,7 @@ export function VideoPlayer({ src, poster, title, subtitles = [], onProgress, co
           const video = event.currentTarget
           onProgress?.(Math.floor(video.currentTime), Math.floor(video.duration || 0))
         }}
-        onPlay={() => setPlaying(true)}
+        onPlay={() => { setPlaying(true); recordPlay() }}
         onPause={() => setPlaying(false)}
         onError={(e) => {
           console.warn("Video element error event:", e)

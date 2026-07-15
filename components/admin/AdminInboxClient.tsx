@@ -24,7 +24,7 @@ export function AdminInboxClient({ messages: initial }: { messages: SupportMessa
 
   const fetchMessages = async () => {
     try {
-      const res = await fetch('/api/admin/support/messages')
+      const res = await fetch(`/api/admin/support/messages?t=${Date.now()}`)
       if (res.ok) {
         const data = await res.json()
         if (data.messages) {

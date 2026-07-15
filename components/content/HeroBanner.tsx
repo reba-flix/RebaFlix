@@ -86,8 +86,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
 
       <div className="absolute inset-0 bg-[linear-gradient(90deg,#141414_0%,rgba(20,20,20,0.82)_35%,rgba(20,20,20,0.18)_100%)] z-10 pointer-events-none" />
       <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#141414] to-transparent z-10 pointer-events-none" />
-      
-      <div className="relative z-20 flex min-h-[78vh] max-w-3xl flex-col justify-end px-4 pb-24 pt-32 md:px-8 lg:px-12">
+      <div className="relative z-20 flex min-h-[78vh] max-w-3xl flex-col justify-end px-4 pb-16 pt-24 md:pb-24 md:pt-32 md:px-8 lg:px-12">
         <AnimatePresence mode="wait">
           <motion.div
             key={`content-${hero.id}`}
@@ -104,7 +103,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
               ) : null}
             </div>
             
-            <h1 className="font-display text-5xl font-black leading-none text-white md:text-7xl">
+            <h1 className="font-display text-4xl font-black leading-none text-white sm:text-5xl md:text-6xl lg:text-7xl">
               {title}
             </h1>
             

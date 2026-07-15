@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Outfit, Archivo_Black } from 'next/font/google'
 import { Navbar } from '@/components/layout/Navbar'
+import { Footer } from '@/components/layout/Footer'
 import { SupportChatWrapper } from '@/components/layout/SupportChatWrapper'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
@@ -44,9 +45,12 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${outfit.variable} ${archivoBlack.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${outfit.variable} ${archivoBlack.variable} font-sans antialiased flex flex-col min-h-screen`}>
         <Navbar />
-        {children}
+        <main className="flex-grow">
+          {children}
+        </main>
+        <Footer />
         <SupportChatWrapper />
         <Toaster />
       </body>

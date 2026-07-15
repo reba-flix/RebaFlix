@@ -16,6 +16,7 @@ export function SupportChat() {
   const [minimized, setMinimized] = useState(false)
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
+  const [sessionId, setSessionId] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
   const [position, setPosition] = useState({ x: 0, y: 0 })
   const [dragging, setDragging] = useState(false)
@@ -24,9 +25,19 @@ export function SupportChat() {
   const bottomRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
 
+  useEffect(() => {
+    let sid = localStorage.getItem('supportSessionId')
+    if (!sid) {
+      sid = Math.random().toString(36).substring(2, 15)
+      localStorage.setItem('supportSessionId', sid)
+    }
+    setSessionId(sid)
+  }, [])
+
   const fetchMessages = useCallback(async () => {
+    if (!sessionId) return
     try {
-      const res = await fetch('/api/support')
+      const res = await fetch(`/api/support?sessionId=${sessionId}&t=${Date.now()}`)
       if (!res.ok) return
       const data = await res.json()
       const fetched: Message[] = []
@@ -42,13 +53,13 @@ export function SupportChat() {
             id: m.id + '-a',
             from: 'admin',
             text: m.reply,
-            time: new Date(m.repliedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            time: m.repliedAt ? new Date(m.repliedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
           })
         }
       }
       setMessages(fetched)
     } catch { /* silent */ }
-  }, [])
+  }, [sessionId])
 
   useEffect(() => {
     if (open) {
@@ -100,7 +111,7 @@ export function SupportChat() {
       await fetch('/api/support', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, sessionId }),
       })
       await fetchMessages()
     } catch { /* silent */ } finally {
@@ -137,7 +148,7 @@ export function SupportChat() {
             exit={{ opacity: 0, scale: 0.85, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
-            className="fixed bottom-6 right-6 z-[9999] w-[340px] rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-white/10 flex flex-col"
+            className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-[9999] w-[90vw] sm:w-[340px] rounded-2xl overflow-hidden shadow-2xl shadow-black/60 border border-white/10 flex flex-col"
           >
             {/* Header (drag handle) */}
             <div

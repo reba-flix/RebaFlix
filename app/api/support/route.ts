@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { message, guestName, guestEmail } = body
+    const { message, sessionId } = body
 
     if (!message?.trim()) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 })
@@ -20,8 +20,8 @@ export async function POST(request: NextRequest) {
       data: {
         message: message.trim(),
         userId: user?.id ?? null,
-        guestName: user ? null : (guestName?.trim() ?? 'Guest'),
-        guestEmail: user ? null : (guestEmail?.trim() ?? null),
+        guestName: user ? null : 'Guest',
+        guestEmail: user ? null : (sessionId ?? null),
       },
     })
 
@@ -33,13 +33,20 @@ export async function POST(request: NextRequest) {
 }
 
 // GET /api/support – fetch messages for the current user (or all for admin)
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const user = await getSessionUser()
-    if (!user) return NextResponse.json({ messages: [] })
+    const { searchParams } = new URL(request.url)
+    const sessionId = searchParams.get('sessionId')
+
+    if (!user && !sessionId) return NextResponse.json({ messages: [] })
+
+    const where = user 
+      ? { OR: [{ userId: user.id }, { guestEmail: sessionId }] }
+      : { guestEmail: sessionId }
 
     const messages = await prisma.supportMessage.findMany({
-      where: { userId: user.id },
+      where,
       orderBy: { createdAt: 'asc' },
     })
 

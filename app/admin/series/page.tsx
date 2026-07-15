@@ -4,6 +4,7 @@ import { getSessionUser, hasRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
+import { AdminMoviesActions } from '@/components/admin/AdminMoviesActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -106,14 +107,11 @@ export default async function AdminSeriesPage() {
                           Manage Episodes
                         </Link>
                       </Button>
-                      <Button variant="ghost" size="icon-sm" asChild>
-                        <Link href={`/admin/series/${s.id}/edit`}>
-                          <Pencil className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button variant="ghost" size="icon-sm" className="text-red-400 hover:text-red-300">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      <AdminMoviesActions
+                        movieId={s.id}
+                        movieTitle={s.title}
+                        type="series"
+                      />
                     </div>
                   </td>
                 </tr>

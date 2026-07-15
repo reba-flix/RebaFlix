@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 
 export async function getHomeCatalog() {
-  const [hero, trending, popular, newReleases, topRated, series, live, documentaries] =
+  const [hero, trending, popular, newReleases, topRated, series, kids, action, comedy, drama, horror, anime] =
     await Promise.all([
       prisma.movie.findFirst({
         where: { published: true, featured: true },
@@ -38,23 +38,33 @@ export async function getHomeCatalog() {
         take: 18,
         include: { genres: { include: { genre: true } } },
       }),
-      prisma.liveChannel.findMany({
-        where: { active: true },
-        orderBy: { sortOrder: 'asc' },
-        take: 18,
+      prisma.movie.findMany({
+        where: { published: true, genres: { some: { genre: { name: { contains: 'kids', mode: 'insensitive' } } } } },
+        orderBy: { createdAt: 'desc' }, take: 18, include: { genres: { include: { genre: true } } },
       }),
       prisma.movie.findMany({
-        where: {
-          published: true,
-          genres: { some: { genre: { slug: 'documentaries' } } },
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 18,
-        include: { genres: { include: { genre: true } } },
+        where: { published: true, genres: { some: { genre: { name: { contains: 'action', mode: 'insensitive' } } } } },
+        orderBy: { createdAt: 'desc' }, take: 18, include: { genres: { include: { genre: true } } },
+      }),
+      prisma.movie.findMany({
+        where: { published: true, genres: { some: { genre: { name: { contains: 'comedy', mode: 'insensitive' } } } } },
+        orderBy: { createdAt: 'desc' }, take: 18, include: { genres: { include: { genre: true } } },
+      }),
+      prisma.movie.findMany({
+        where: { published: true, genres: { some: { genre: { name: { contains: 'drama', mode: 'insensitive' } } } } },
+        orderBy: { createdAt: 'desc' }, take: 18, include: { genres: { include: { genre: true } } },
+      }),
+      prisma.movie.findMany({
+        where: { published: true, genres: { some: { genre: { name: { contains: 'horror', mode: 'insensitive' } } } } },
+        orderBy: { createdAt: 'desc' }, take: 18, include: { genres: { include: { genre: true } } },
+      }),
+      prisma.movie.findMany({
+        where: { published: true, genres: { some: { genre: { name: { contains: 'anime', mode: 'insensitive' } } } } },
+        orderBy: { createdAt: 'desc' }, take: 18, include: { genres: { include: { genre: true } } },
       }),
     ])
 
-  return { hero, trending, popular, newReleases, topRated, series, live, documentaries }
+  return { hero, trending, popular, newReleases, topRated, series, kids, action, comedy, drama, horror, anime }
 }
 
 export const demoPosters = [

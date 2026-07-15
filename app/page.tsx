@@ -50,9 +50,6 @@ export default async function HomePage() {
   })
 
   const topRated = catalog?.topRated.length ? catalog.topRated : fallbackItems(fallbackRows.topRated)
-  const docs = catalog?.documentaries.length
-    ? catalog.documentaries
-    : fallbackItems(fallbackRows.documentaries)
 
   return (
     <main className="min-h-screen space-y-8 pb-16">
@@ -64,16 +61,12 @@ export default async function HomePage() {
       <ContentRow title="Top Rated" items={topRated} />
       <ContentRow title="Recently Added" items={rawNewReleases} />
       <ContentRow title="TV Series" items={catalog?.series ?? fallbackItems(['The Hills', 'Campus 250', 'Market Queens'])} type="series" />
-      <ContentRow title="Live TV" items={catalog?.live ?? fallbackItems(['RebaFlix Live', 'Premiere Room', 'Kids Live'])} type="live" />
-      <ContentRow title="Kids" items={fallbackItems(['Little Explorers', 'Saturday Club', 'Kigali Kids'])} />
-      <ContentRow title="Action" items={fallbackItems(['Nyungwe Signal', 'The Runner', 'Border Line'])} />
-      <ContentRow title="Comedy" items={fallbackItems(['Auntie Returns', 'The Wedding List', 'Flatmates'])} />
-      <ContentRow title="Drama" items={fallbackItems(['The Bridge Home', 'Inheritance', 'After Rain'])} />
-      <ContentRow title="Horror" items={fallbackItems(['The Whisper House', 'Night Bus', 'Room 14'])} />
-      <ContentRow title="Anime" items={fallbackItems(['Sky Kingdom', 'Rift Guardians', 'Mecha Kigali'])} />
-      <ContentRow title="Documentaries" items={docs} />
-      <ContentRow title="African Movies" items={fallbackItems(['Savanna Road', 'Gold Coast', 'Lagos Letters'])} />
-      <ContentRow title="Rwandan Movies" items={fallbackItems(['Umurage', 'Imigongo', 'City of Thousand Hills'])} />
+      <ContentRow title="Kids" items={catalog?.kids || []} />
+      <ContentRow title="Action" items={catalog?.action || []} />
+      <ContentRow title="Comedy" items={catalog?.comedy || []} />
+      <ContentRow title="Drama" items={catalog?.drama || []} />
+      <ContentRow title="Horror" items={catalog?.horror || []} />
+      <ContentRow title="Anime" items={catalog?.anime || []} />
     </main>
   )
 }

@@ -41,9 +41,12 @@ export default async function HomePage() {
   
   // Combine, interleave, or sort them (here we just concat and sort by created/release date)
   const mixedNewReleases = [...taggedNewReleases, ...taggedSeries].sort((a, b) => {
-    const dateA = ('releaseDate' in a && a.releaseDate) ? new Date(a.releaseDate as string).getTime() : (('createdAt' in a && a.createdAt) ? new Date(a.createdAt as string).getTime() : 0)
-    const dateB = ('releaseDate' in b && b.releaseDate) ? new Date(b.releaseDate as string).getTime() : (('createdAt' in b && b.createdAt) ? new Date(b.createdAt as string).getTime() : 0)
-    return dateB - dateA
+    const getMs = (item: any) => {
+      if (item.releaseDate) return new Date(item.releaseDate).getTime()
+      if (item.createdAt) return new Date(item.createdAt).getTime()
+      return 0
+    }
+    return getMs(b) - getMs(a)
   })
 
   const topRated = catalog?.topRated.length ? catalog.topRated : fallbackItems(fallbackRows.topRated)

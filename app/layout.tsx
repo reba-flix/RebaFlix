@@ -18,11 +18,19 @@ export const metadata: Metadata = {
     'RebaFlix is a premium streaming platform for original movies, TV series, live TV, documentaries, trailers, and exclusive content.',
   manifest: '/manifest.json',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'),
+  icons: {
+    icon: [
+      { url: '/rebaflix-logo.png', type: 'image/png' },
+    ],
+    apple: '/rebaflix-logo.png',
+    shortcut: '/rebaflix-logo.png',
+  },
   openGraph: {
     title: 'RebaFlix',
     description: 'Original movies, live TV, documentaries, series, and exclusive premieres.',
     siteName: 'RebaFlix',
     type: 'website',
+    images: [{ url: '/rebaflix-logo.png' }],
   },
 }
 

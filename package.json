@@ -54,7 +54,6 @@
     "zustand": "^5.0.1"
   },
   "devDependencies": {
-    "@next/swc-wasm-nodejs": "^15.3.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

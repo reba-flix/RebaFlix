@@ -11,9 +11,9 @@ type BrandLogoProps = {
 export function BrandLogo({ className, showName = false, priority = false }: BrandLogoProps) {
   return (
     <span className={cn('flex items-center gap-2', className)}>
-      <span className="relative block aspect-[259/288] h-full">
+      <span className="relative block aspect-square h-full">
         <Image
-          src="/rebaflix-logo.png"
+          src="/logo-reba2.png"
           alt="RebaFlix"
           fill
           priority={priority}

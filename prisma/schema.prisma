@@ -1,0 +1,566 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum PlanInterval {
+  MONTHLY
+  YEARLY
+}
+
+enum SubscriptionStatus {
+  FREE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum PaymentProvider {
+  STRIPE
+  PAYPAL
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum NotificationChannel {
+  EMAIL
+  PUSH
+  IN_APP
+}
+
+enum ContentRating {
+  G
+  PG
+  PG_13
+  R
+  NC_17
+  TV_Y
+  TV_G
+  TV_PG
+  TV_14
+  TV_MA
+}
+
+model User {
+  id              String          @id @default(cuid())
+  email           String          @unique
+  name            String?
+  phone           String?
+  avatarUrl       String?
+  locale          String          @default("en")
+  rtl             Boolean         @default(false)
+  lastSeenAt      DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  roles           UserRole[]
+  subscriptions   Subscription[]
+  payments        Payment[]
+  favorites       Favorite[]
+  histories       History[]
+  watchLater      WatchLater[]
+  comments        Comment[]
+  ratings         Rating[]
+  notifications   Notification[]
+  recommendations Recommendation[]
+  analytics       AnalyticsEvent[]
+  supportMessages SupportMessage[]
+
+  @@index([email])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  action      String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model UserRole {
+  userId String
+  roleId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model Movie {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  title          String
+  tagline        String?
+  description    String
+  posterUrl      String?
+  backdropUrl    String?
+  trailerUrl     String?
+  videoUrl       String?
+  downloadUrl    String?
+  runtimeMinutes Int?
+  releaseDate    DateTime?
+  contentRating  ContentRating?
+  averageRating  Float         @default(0)
+  ratingCount    Int           @default(0)
+  viewCount      Int           @default(0)
+  featured       Boolean       @default(false)
+  published      Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  directorId     String?
+  director       Person?       @relation("MovieDirector", fields: [directorId], references: [id])
+  actors         MovieActor[]
+  genres         MovieGenre[]
+  categories     MovieCategory[]
+  languages      MovieLanguage[]
+  subtitles      Subtitle[]
+  favorites      Favorite[]
+  histories      History[]
+  watchLater     WatchLater[]
+  comments       Comment[]
+  ratings        Rating[]
+  recommendations Recommendation[]
+  advertisements Advertisement[]
+
+  @@index([published, featured])
+  @@index([releaseDate])
+  @@index([averageRating])
+}
+
+model Series {
+  id             String        @id @default(cuid())
+  slug           String        @unique
+  title          String
+  tagline        String?
+  description    String
+  posterUrl      String?
+  backdropUrl    String?
+  trailerUrl     String?
+  downloadUrl    String?
+  contentRating  ContentRating?
+  averageRating  Float         @default(0)
+  ratingCount    Int           @default(0)
+  viewCount      Int           @default(0)
+  featured       Boolean       @default(false)
+  published      Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  directorId     String?
+  director       Person?       @relation("SeriesDirector", fields: [directorId], references: [id])
+  seasons        Season[]
+  actors         SeriesActor[]
+  genres         SeriesGenre[]
+  categories     SeriesCategory[]
+  favorites      Favorite[]
+  watchLater     WatchLater[]
+  comments       Comment[]
+  ratings        Rating[]
+}
+
+model Season {
+  id          String    @id @default(cuid())
+  seriesId    String
+  number      Int
+  title       String?
+  description String?
+  posterUrl   String?
+  createdAt   DateTime  @default(now())
+  series      Series    @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  episodes    Episode[]
+
+  @@unique([seriesId, number])
+}
+
+model Episode {
+  id             String       @id @default(cuid())
+  seasonId       String
+  number         Int
+  title          String
+  description    String?
+  thumbnailUrl   String?
+  videoUrl       String?
+  runtimeMinutes Int?
+  releaseDate    DateTime?
+  published      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  season         Season       @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  subtitles      Subtitle[]
+  favorites      Favorite[]
+  histories      History[]
+  watchLater     WatchLater[]
+
+  @@unique([seasonId, number])
+}
+
+model LiveChannel {
+  id            String     @id @default(cuid())
+  slug          String     @unique
+  name          String
+  description   String?
+  logoUrl       String?
+  streamUrl     String
+  categoryId    String?
+  languageId    String?
+  drmEnabled    Boolean    @default(false)
+  active        Boolean    @default(true)
+  sortOrder     Int        @default(0)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  category      Category?  @relation(fields: [categoryId], references: [id])
+  language      Language?  @relation(fields: [languageId], references: [id])
+  schedules     Schedule[]
+}
+
+model Schedule {
+  id            String      @id @default(cuid())
+  liveChannelId String
+  title         String
+  description   String?
+  startsAt      DateTime
+  endsAt        DateTime
+  rating        ContentRating?
+  liveChannel   LiveChannel @relation(fields: [liveChannelId], references: [id], onDelete: Cascade)
+
+  @@index([liveChannelId, startsAt])
+}
+
+model Person {
+  id             String        @id @default(cuid())
+  name           String
+  photoUrl       String?
+  biography      String?
+  directedMovies Movie[]       @relation("MovieDirector")
+  directedSeries Series[]      @relation("SeriesDirector")
+  movieRoles     MovieActor[]
+  seriesRoles    SeriesActor[]
+}
+
+model MovieActor {
+  movieId   String
+  personId  String
+  character String?
+  sortOrder Int     @default(0)
+  movie     Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  person    Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, personId])
+}
+
+model SeriesActor {
+  seriesId  String
+  personId  String
+  character String?
+  sortOrder Int     @default(0)
+  series    Series  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  person    Person  @relation(fields: [personId], references: [id], onDelete: Cascade)
+
+  @@id([seriesId, personId])
+}
+
+model Genre {
+  id      String        @id @default(cuid())
+  name    String        @unique
+  slug    String        @unique
+  movies  MovieGenre[]
+  series  SeriesGenre[]
+}
+
+model Category {
+  id           String           @id @default(cuid())
+  name         String           @unique
+  slug         String           @unique
+  movies       MovieCategory[]
+  series       SeriesCategory[]
+  liveChannels LiveChannel[]
+}
+
+model MovieGenre {
+  movieId String
+  genreId String
+  movie   Movie  @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  genre   Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, genreId])
+}
+
+model SeriesGenre {
+  seriesId String
+  genreId  String
+  series   Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  genre    Genre  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([seriesId, genreId])
+}
+
+model MovieCategory {
+  movieId    String
+  categoryId String
+  movie      Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, categoryId])
+}
+
+model SeriesCategory {
+  seriesId   String
+  categoryId String
+  series     Series   @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([seriesId, categoryId])
+}
+
+model Language {
+  id           String          @id @default(cuid())
+  code         String          @unique
+  name         String
+  nativeName   String?
+  rtl          Boolean         @default(false)
+  movies       MovieLanguage[]
+  subtitles    Subtitle[]
+  liveChannels LiveChannel[]
+}
+
+model MovieLanguage {
+  movieId    String
+  languageId String
+  movie      Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  language   Language @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  @@id([movieId, languageId])
+}
+
+model Subtitle {
+  id         String    @id @default(cuid())
+  languageId String
+  movieId    String?
+  episodeId  String?
+  label      String
+  url        String
+  default    Boolean   @default(false)
+  language   Language  @relation(fields: [languageId], references: [id])
+  movie      Movie?    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  episode    Episode?  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@index([movieId])
+  @@index([episodeId])
+}
+
+model Subscription {
+  id                  String             @id @default(cuid())
+  userId              String
+  planName            String
+  interval            PlanInterval?
+  status              SubscriptionStatus @default(FREE)
+  priceCents          Int                @default(0)
+  currency            String             @default("USD")
+  providerCustomerId  String?
+  providerReferenceId String?
+  startedAt           DateTime           @default(now())
+  currentPeriodEnd    DateTime?
+  canceledAt          DateTime?
+  user                User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+}
+
+model Payment {
+  id             String          @id @default(cuid())
+  userId         String
+  subscriptionId String?
+  provider       PaymentProvider
+  status         PaymentStatus   @default(PENDING)
+  amountCents    Int
+  currency       String          @default("USD")
+  reference      String?
+  metadata       Json?
+  createdAt      DateTime        @default(now())
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  userId    String
+  movieId   String?
+  seriesId  String?
+  episodeId String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie     Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series    Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  episode   Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, movieId])
+  @@unique([userId, seriesId])
+  @@unique([userId, episodeId])
+}
+
+model History {
+  id              String   @id @default(cuid())
+  userId          String
+  movieId         String?
+  episodeId       String?
+  positionSeconds Int      @default(0)
+  durationSeconds Int      @default(0)
+  completed       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie           Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  episode         Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, movieId])
+  @@unique([userId, episodeId])
+  @@index([userId, updatedAt])
+}
+
+model WatchLater {
+  id        String   @id @default(cuid())
+  userId    String
+  movieId   String?
+  seriesId  String?
+  episodeId String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie     Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series    Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  episode   Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, movieId])
+  @@unique([userId, seriesId])
+  @@unique([userId, episodeId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  userId    String
+  movieId   String?
+  seriesId  String?
+  body      String
+  reported  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie     Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series    Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  userId    String
+  movieId   String?
+  seriesId  String?
+  value     Int
+  review    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie     Movie?   @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series    Series?  @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, movieId])
+  @@unique([userId, seriesId])
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  channel   NotificationChannel @default(IN_APP)
+  title     String
+  body      String
+  href      String?
+  readAt    DateTime?
+  createdAt DateTime            @default(now())
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}
+
+model Recommendation {
+  id        String   @id @default(cuid())
+  userId    String
+  movieId   String
+  score     Float
+  reason    String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie     Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, movieId])
+  @@index([userId, score])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  name      String
+  path      String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([name, createdAt])
+}
+
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model Advertisement {
+  id        String   @id @default(cuid())
+  name      String
+  imageUrl  String?
+  videoUrl  String?
+  href      String?
+  movieId   String?
+  active    Boolean  @default(true)
+  startsAt  DateTime?
+  endsAt    DateTime?
+  createdAt DateTime @default(now())
+  movie     Movie?   @relation(fields: [movieId], references: [id], onDelete: SetNull)
+}
+
+model SupportMessage {
+  id        String   @id @default(cuid())
+  userId    String?
+  guestName String?
+  guestEmail String?
+  message   String
+  reply     String?
+  readAt    DateTime?
+  repliedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}

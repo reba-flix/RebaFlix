@@ -6,6 +6,7 @@ export async function GET() {
   const supabase = createAdminClient()
   
   const { data, error } = await supabase.storage.updateBucket(env.supabaseStorageBucket, {
+    public: false,
     allowedMimeTypes: [
       'image/jpeg', 
       'image/png', 

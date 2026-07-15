@@ -5,12 +5,13 @@ import EditMovieForm from './EditMovieForm'
 
 export const dynamic = 'force-dynamic'
 
-export default async function EditMoviePage({ params }: { params: { id: string } }) {
+export default async function EditMoviePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const user = await getSessionUser()
   if (!hasRole(user, 'ADMIN')) redirect('/')
 
   const movie = await prisma.movie.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { genres: true }
   })
 

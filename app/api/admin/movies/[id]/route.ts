@@ -5,12 +5,12 @@ import { prisma } from '@/lib/prisma'
 export const dynamic = 'force-dynamic'
 
 // PATCH /api/admin/movies/[id]
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { user, response } = await requireUser()
   if (response) return response
   if (!hasRole(user, 'ADMIN')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { id } = params
+  const { id } = await params
   if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 })
 
   try {
@@ -107,12 +107,12 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 // DELETE /api/admin/movies/[id]
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { user, response } = await requireUser()
   if (response) return response
   if (!hasRole(user, 'ADMIN')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { id } = params
+  const { id } = await params
   if (!id) return NextResponse.json({ error: 'Missing ID' }, { status: 400 })
 
   const { searchParams } = new URL(request.url)

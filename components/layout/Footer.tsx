@@ -60,7 +60,7 @@ export function Footer() {
             <p className="text-sm text-white/60 mb-4">
               Subscribe to our newsletter to get the latest updates on new releases and features.
             </p>
-            <form className="flex gap-2" onSubmit={(e) => e.preventDefault()}>
+            <form className="flex gap-2" action="#">
               <div className="relative flex-1">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
                 <input 
@@ -71,7 +71,7 @@ export function Footer() {
                 />
               </div>
               <button 
-                type="submit" 
+                type="button" 
                 className="bg-[#E50914] hover:bg-[#c0070f] text-white px-4 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 group"
               >
                 <span>Subscribe</span>

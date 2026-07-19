@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
             slug,
             description: item.description || '',
             releaseDate,
-            externalVideoUrl: item.externalVideoUrl || null,
+            videoUrl: item.externalVideoUrl || null,
             posterUrl: item.posterUrl || null,
             published: true, // auto-publish for bulk
           }

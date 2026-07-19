@@ -4,11 +4,12 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { LayoutDashboard, Film, Users, Settings, Activity, Radio, CreditCard, Inbox, Menu, X } from 'lucide-react'
+import { LayoutDashboard, Film, Users, Settings, Activity, Radio, CreditCard, Inbox, Menu, X, BarChart3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const sidebarLinks = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
   { name: 'Movies', href: '/admin/movies', icon: Film },
   { name: 'Series', href: '/admin/series', icon: Film },
   { name: 'Channels', href: '/admin/channels', icon: Radio },

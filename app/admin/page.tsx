@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { BarChart3, Clapperboard, CreditCard, Radio, Settings, Users, ArrowUpRight, ArrowDownRight, Upload, Play, ShieldAlert, Activity } from 'lucide-react'
+import { BarChart3, Clapperboard, CreditCard, Radio, Settings, Users, ArrowUpRight, ArrowDownRight, Upload, Play, ShieldAlert, Activity, Eye } from 'lucide-react'
 import { getSessionUser, hasRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
@@ -10,17 +10,22 @@ export default async function AdminPage() {
   const user = await getSessionUser()
   if (!hasRole(user, 'ADMIN')) redirect('/')
 
-  const [movies, users, channels, payments] = await Promise.all([
+  const [movies, users, channels, payments, movieViews, seriesViews] = await Promise.all([
     prisma.movie.count(),
     prisma.user.count(),
     prisma.liveChannel.count(),
     prisma.payment.aggregate({ _sum: { amountCents: true } }),
+    prisma.movie.aggregate({ _sum: { viewCount: true } }),
+    prisma.series.aggregate({ _sum: { viewCount: true } }),
   ])
+  
+  const totalViews = (movieViews._sum.viewCount || 0) + (seriesViews._sum.viewCount || 0)
 
   const stats = [
     { label: 'Total Movies', value: movies, icon: Clapperboard, trend: '+12%', up: true, href: '/admin/movies' },
     { label: 'Active Users', value: users, icon: Users, trend: '+4%', up: true, href: '/admin/users' },
     { label: 'Live Channels', value: channels, icon: Radio, trend: '0%', up: true, href: '/admin/channels' },
+    { label: 'Total Views', value: totalViews.toLocaleString(), icon: Eye, trend: '+8%', up: true, href: '/admin/analytics' },
     { label: 'Revenue', value: `$${((payments._sum.amountCents ?? 0) / 100).toLocaleString()}`, icon: CreditCard, trend: '+24%', up: true, href: '/admin/revenue' },
     { label: 'System Health', value: '99.9%', icon: Activity, trend: 'Optimal', up: true, href: '/admin/logs' },
   ]

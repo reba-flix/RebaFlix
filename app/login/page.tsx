@@ -154,16 +154,6 @@ export default function LoginPage() {
               )}
             </Button>
 
-            <Button
-              id="login-magic-link"
-              className="w-full"
-              type="button"
-              variant="ghost"
-              disabled={loading || !email}
-              onClick={sendMagicLink}
-            >
-              Email me a sign-in link
-            </Button>
 
             <Button
               id="login-google"

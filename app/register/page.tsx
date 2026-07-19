@@ -167,9 +167,32 @@ export default function RegisterPage() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Creating account...
                 </>
-              ) : (
-                'Sign up'
               )}
+            </Button>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-white/10" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-[#111] px-2 text-white/45 backdrop-blur-sm">Or</span>
+              </div>
+            </div>
+
+            <Button
+              id="register-google"
+              className="w-full"
+              type="button"
+              variant="outline"
+              disabled={loading}
+              onClick={() =>
+                supabase.auth.signInWithOAuth({
+                  provider: 'google',
+                  options: { redirectTo: `${location.origin}/auth/callback?next=/` },
+                })
+              }
+            >
+              Continue with Google
             </Button>
           </form>
         </div>

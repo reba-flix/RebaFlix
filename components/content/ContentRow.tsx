@@ -21,7 +21,6 @@ type RowItem = {
   seasons?: Array<{ _count?: { episodes?: number }; episodes?: any[] }>
   _count?: { seasons?: number }
   episodeCount?: number
-  episodeCount?: number
   releaseDate?: string | Date | null
 }
 

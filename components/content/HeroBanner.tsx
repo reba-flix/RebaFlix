@@ -125,12 +125,6 @@ export function HeroBanner({ movies }: HeroBannerProps) {
                   Play
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="secondary">
-                <Link href={infoUrl}>
-                  <Info className="h-5 w-5" />
-                  More Info
-                </Link>
-              </Button>
             </div>
           </motion.div>
         </AnimatePresence>

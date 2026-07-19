@@ -28,7 +28,7 @@ export function Navbar() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-  const [recentMovies, setRecentMovies] = useState<{id: string, title: string, posterUrl: string | null}[]>([])
+  const [recentReleases, setRecentReleases] = useState<{id: string, title: string, posterUrl: string | null, type: 'movie' | 'series', createdAt: string}[]>([])
   const searchRef = useRef<HTMLInputElement>(null)
   const { user, isAdmin, signOut } = useAuth()
   const router = useRouter()
@@ -39,19 +39,19 @@ export function Navbar() {
     const handleScroll = () => setIsScrolled(window.scrollY > 50)
     window.addEventListener('scroll', handleScroll)
     
-    // Fetch recent movies for notifications
-    const fetchRecentMovies = async () => {
+    // Fetch recent releases for notifications
+    const fetchRecentReleases = async () => {
       try {
-        const res = await fetch('/api/movies?limit=3&sort=createdAt')
+        const res = await fetch('/api/recent-releases')
         if (res.ok) {
           const data = await res.json()
-          if (data.movies) setRecentMovies(data.movies)
+          if (data.releases) setRecentReleases(data.releases)
         }
       } catch (err) {
-        console.error('Error fetching recent movies', err)
+        console.error('Error fetching recent releases', err)
       }
     }
-    fetchRecentMovies()
+    fetchRecentReleases()
     
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -76,6 +76,17 @@ export function Navbar() {
     await signOut()
     router.push('/')
     setShowUserMenu(false)
+  }
+
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+    
+    if (diffInSeconds < 60) return 'Just now'
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+    return `${Math.floor(diffInSeconds / 86400)}d ago`
   }
 
   if (pathname?.startsWith('/watch')) return null
@@ -186,7 +197,9 @@ export function Navbar() {
                   className="relative p-2 text-white/80 hover:text-white transition-colors hidden md:block"
                 >
                   <Bell className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-[#E50914] rounded-full" />
+                  {recentReleases.length > 0 && (
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-[#E50914] rounded-full" />
+                  )}
                 </button>
                 
                 <AnimatePresence>
@@ -196,37 +209,49 @@ export function Navbar() {
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute right-0 top-12 w-72 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
+                      className="absolute right-0 top-12 w-80 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden z-50"
                     >
                       <div className="px-4 py-3 border-b border-white/10 flex justify-between items-center">
                         <p className="text-sm font-semibold text-white">Notifications</p>
                       </div>
-                      <div className="max-h-80 overflow-y-auto">
-                        {recentMovies.length > 0 ? (
-                          recentMovies.map(movie => (
+                      <div className="max-h-96 overflow-y-auto">
+                        {recentReleases.length > 0 ? (
+                          recentReleases.map(item => (
                             <Link 
-                              key={movie.id} 
-                              href={`/watch/${movie.id}`}
+                              key={item.id} 
+                              href={`/${item.type === 'movie' ? 'watch' : 'series'}/${item.id}`}
                               onClick={() => setShowNotifications(false)}
-                              className="flex gap-3 p-4 border-b border-white/5 hover:bg-white/5 transition-colors"
+                              className="flex gap-4 p-4 border-b border-white/5 hover:bg-white/5 transition-colors items-start"
                             >
-                              {movie.posterUrl ? (
-                                <img src={movie.posterUrl} alt={movie.title} className="w-12 h-16 object-cover rounded" />
+                              {item.posterUrl ? (
+                                <img src={item.posterUrl} alt={item.title} className="w-14 h-20 object-cover rounded shadow-sm" />
                               ) : (
-                                <div className="w-12 h-16 bg-white/10 rounded flex items-center justify-center">
-                                  <Heart className="w-4 h-4 text-white/40" />
+                                <div className="w-14 h-20 bg-white/10 rounded flex items-center justify-center shrink-0">
+                                  <Heart className="w-5 h-5 text-white/40" />
                                 </div>
                               )}
-                              <div>
-                                <p className="text-sm font-medium text-white mb-1">New Movie Added!</p>
-                                <p className="text-xs text-white/60 line-clamp-2">{movie.title} is now available to watch.</p>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <p className="text-xs font-semibold text-[#E50914] uppercase tracking-wider">
+                                    New {item.type}
+                                  </p>
+                                  <p className="text-[10px] text-white/40 shrink-0">
+                                    {formatTimeAgo(item.createdAt)}
+                                  </p>
+                                </div>
+                                <p className="text-sm font-medium text-white line-clamp-2 leading-tight">
+                                  {item.title}
+                                </p>
+                                <p className="text-xs text-white/50 mt-1.5">
+                                  Now available to watch.
+                                </p>
                               </div>
                             </Link>
                           ))
                         ) : (
                           <div className="p-6 text-center">
-                            <Bell className="w-8 h-8 text-white/20 mx-auto mb-2" />
-                            <p className="text-sm text-white/60">New movies will show up here</p>
+                            <Bell className="w-8 h-8 text-white/20 mx-auto mb-3" />
+                            <p className="text-sm text-white/60">New movies and series will show up here</p>
                           </div>
                         )}
                       </div>

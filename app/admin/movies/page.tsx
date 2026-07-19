@@ -29,12 +29,20 @@ export default async function AdminMoviesPage() {
             <p className="text-white/50 text-sm mt-1">Manage content and track play counts.</p>
           </div>
         </div>
-        <Link
-          href="/admin/movies/new"
-          className="flex items-center gap-2 bg-[#E50914] hover:bg-[#b80710] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-[#E50914]/20 w-fit"
-        >
-          <Plus className="w-4 h-4" /> Add Movie
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/movies/bulk-upload"
+            className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-fit"
+          >
+            Bulk Upload
+          </Link>
+          <Link
+            href="/admin/movies/new"
+            className="flex items-center gap-2 bg-[#E50914] hover:bg-[#b80710] text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-[#E50914]/20 w-fit"
+          >
+            <Plus className="w-4 h-4" /> Add Movie
+          </Link>
+        </div>
       </div>
 
       {/* Stats Row */}

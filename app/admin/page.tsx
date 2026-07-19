@@ -10,12 +10,11 @@ export default async function AdminPage() {
   const user = await getSessionUser()
   if (!hasRole(user, 'ADMIN')) redirect('/')
 
-  const [movies, users, channels, payments, analytics] = await Promise.all([
+  const [movies, users, channels, payments] = await Promise.all([
     prisma.movie.count(),
     prisma.user.count(),
     prisma.liveChannel.count(),
     prisma.payment.aggregate({ _sum: { amountCents: true } }),
-    prisma.analyticsEvent.count(),
   ])
 
   const stats = [
@@ -23,7 +22,6 @@ export default async function AdminPage() {
     { label: 'Active Users', value: users, icon: Users, trend: '+4%', up: true, href: '/admin/users' },
     { label: 'Live Channels', value: channels, icon: Radio, trend: '0%', up: true, href: '/admin/channels' },
     { label: 'Revenue', value: `$${((payments._sum.amountCents ?? 0) / 100).toLocaleString()}`, icon: CreditCard, trend: '+24%', up: true, href: '/admin/revenue' },
-    { label: 'Analytics Events', value: analytics.toLocaleString(), icon: BarChart3, trend: '+18%', up: true, href: '/admin/analytics' },
     { label: 'System Health', value: '99.9%', icon: Activity, trend: 'Optimal', up: true, href: '/admin/logs' },
   ]
 

@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
-import { Languages, Play, Download, Heart, Star, Bookmark, Info } from 'lucide-react'
+import { Languages, Play, Download, Heart, Star, Bookmark, Film } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 
@@ -180,6 +180,16 @@ export function MediaCard({
           </button>
         </div>
 
+        {/* ── EPISODE COUNT BADGE (always visible, bottom-left) ── */}
+        {isSeason && episodeCount !== undefined && episodeCount > 0 && (
+          <div className="absolute bottom-[4.5rem] left-3 z-10 pointer-events-none">
+            <span className="inline-flex items-center gap-1 bg-black/75 backdrop-blur-sm text-white text-[11px] font-bold px-2 py-1 rounded-md shadow-lg border border-white/10">
+              <Film className="h-3 w-3 flex-shrink-0" />
+              {episodeCount} {episodeCount === 1 ? 'Episode' : 'Episodes'}
+            </span>
+          </div>
+        )}
+
         {/* ── BOTTOM INFO ── */}
         <div className="absolute bottom-0 left-0 right-0 p-3 pointer-events-none">
           <div className="mb-1.5 flex items-center gap-2">
@@ -191,14 +201,6 @@ export function MediaCard({
             ) : null}
           </div>
           <h3 className="line-clamp-2 text-sm font-bold text-white">{title}</h3>
-
-          {/* Episode count for series */}
-          {isSeason && episodeCount !== undefined && episodeCount > 0 && (
-            <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-white/70">
-              <Info className="h-3 w-3 flex-shrink-0 text-white/50" />
-              {episodeCount} {episodeCount === 1 ? 'Episode' : 'Episodes'}
-            </p>
-          )}
 
           {translator ? (
             <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium leading-tight text-white/75">

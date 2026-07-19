@@ -20,8 +20,11 @@ export async function addEpisodeToSeries(
   const title = formData.get('title') as string
   const videoUrl = formData.get('videoUrl') as string
 
-  if (!seriesId || isNaN(seasonNumber) || isNaN(episodeNumber) || !title || !videoUrl) {
-    return { error: 'All fields are required.' }
+  if (!seriesId || isNaN(seasonNumber) || isNaN(episodeNumber) || !title) {
+    return { error: 'Season number, episode number, and title are required.' }
+  }
+  if (!videoUrl) {
+    return { error: 'Please provide a video URL or upload a video file.' }
   }
 
   try {

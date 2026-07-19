@@ -7,6 +7,7 @@ import { BrandLogo } from '@/components/brand/BrandLogo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react'
+import { GoogleIcon } from '@/components/icons/GoogleIcon'
 
 export default function RegisterPage() {
   const supabase = createClient()
@@ -194,6 +195,7 @@ export default function RegisterPage() {
                 })
               }
             >
+              <GoogleIcon className="mr-2 h-4 w-4" />
               Continue with Google
             </Button>
           </form>

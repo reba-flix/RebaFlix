@@ -3,6 +3,7 @@ import { hasRole, requireUser } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
 import { assertMediaFolder, uploadToR2 } from '@/lib/storage'
 import { env } from '@/lib/env'
+import crypto from 'node:crypto'
 
 // Allowed MIME types per folder
 const ALLOWED_MIME_TYPES: Record<string, string[]> = {

@@ -16,6 +16,7 @@ export function getR2Client() {
     _client = new S3Client({
       region: 'auto', // R2 requires region "auto"
       endpoint: env.r2Endpoint,
+      forcePathStyle: true,
       credentials: {
         accessKeyId: env.r2AccessKeyId,
         secretAccessKey: env.r2SecretAccessKey,

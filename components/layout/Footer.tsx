@@ -1,8 +1,14 @@
+'use client'
+
 import Link from 'next/link'
 import { BrandLogo } from '@/components/brand/BrandLogo'
-import { Facebook, Twitter, Instagram, Youtube, Mail, ArrowRight } from 'lucide-react'
+import { Facebook, Instagram, Youtube, Mail, ArrowRight } from 'lucide-react'
+import { usePathname } from 'next/navigation'
 
 export function Footer() {
+  const pathname = usePathname()
+  if (pathname?.startsWith('/watch')) return null
+
   return (
     <footer className="relative bg-[#0a0a0a] text-white/70 pt-20 pb-10 px-4 md:px-8 lg:px-12 border-t border-white/10 mt-auto overflow-hidden">
       {/* Background Glow */}
@@ -17,16 +23,13 @@ export function Footer() {
               RebaFlix is your premium destination for original movies, TV series, documentaries, and exclusive content. Experience entertainment like never before.
             </p>
             <div className="flex items-center gap-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#E50914] hover:text-white transition-all duration-300 group" aria-label="Facebook">
+              <a href="https://www.facebook.com/share/14mv2jbufH3/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#E50914] hover:text-white transition-all duration-300 group" aria-label="Facebook">
                 <Facebook className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#E50914] hover:text-white transition-all duration-300 group" aria-label="Twitter">
-                <Twitter className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
-              </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#E50914] hover:text-white transition-all duration-300 group" aria-label="Instagram">
+              <a href="https://www.instagram.com/rebaflix?igsh=MWk3ZGFuZzQ1bWk1aw%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#E50914] hover:text-white transition-all duration-300 group" aria-label="Instagram">
                 <Instagram className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
               </a>
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#E50914] hover:text-white transition-all duration-300 group" aria-label="Youtube">
+              <a href="https://www.youtube.com/@Rebaflix" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-[#E50914] hover:text-white transition-all duration-300 group" aria-label="Youtube">
                 <Youtube className="w-5 h-5 text-white/70 group-hover:text-white transition-colors" />
               </a>
             </div>

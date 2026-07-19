@@ -78,6 +78,8 @@ export function Navbar() {
     setShowUserMenu(false)
   }
 
+  if (pathname?.startsWith('/watch')) return null
+
   return (
     <>
       <motion.nav

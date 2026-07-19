@@ -23,12 +23,14 @@ export default function EditMovieForm({ movie }: { movie: any }) {
   }, [])
 
   const extractTranslator = (desc: string) => {
-    const match = desc.match(/Translator:\s*(.+)$/i)
-    return match ? match[1] : ''
+    if (!desc) return ''
+    const match = desc.match(/Translator:\s*(.+?)(?=\n|$)/i)
+    return match ? match[1].trim() : ''
   }
   
   const stripTranslator = (desc: string) => {
-    return desc.replace(/\n\nTranslator:\s*(.+)$/i, '')
+    if (!desc) return ''
+    return desc.replace(/(?:\r?\n)*Translator:\s*.+?(?=\n|$)/i, '').trim()
   }
 
   const [formData, setFormData] = useState({
@@ -41,7 +43,7 @@ export default function EditMovieForm({ movie }: { movie: any }) {
     externalVideoUrl: movie.videoUrl || '',
     downloadUrl: movie.downloadUrl || '',
     runtimeMinutes: movie.runtimeMinutes?.toString() || '',
-    releaseDate: movie.releaseDate ? new Date(movie.releaseDate).toISOString().split('T')[0] : '',
+    releaseYear: movie.releaseDate ? new Date(movie.releaseDate).getFullYear().toString() : '',
     contentRating: movie.contentRating || '',
     featured: movie.featured || false,
     published: movie.published || false,
@@ -131,11 +133,17 @@ export default function EditMovieForm({ movie }: { movie: any }) {
       if (backdropFile) backdropUrl = await uploadFile(backdropFile, 'backdrops')
       if (videoFile) videoUrl = await uploadFile(videoFile, 'videos')
 
+      const finalDescription = formData.translator.trim()
+        ? `${formData.description.trim()}\n\nTranslator: ${formData.translator.trim()}`
+        : formData.description.trim()
+
       const res = await fetch(`/api/admin/movies/${movie.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          description: finalDescription,
+          releaseDate: formData.releaseYear ? `${formData.releaseYear}-01-01T00:00:00Z` : undefined,
           posterUrl: posterUrl || undefined,
           backdropUrl: backdropUrl || undefined,
           videoUrl: videoUrl || undefined,
@@ -222,8 +230,8 @@ export default function EditMovieForm({ movie }: { movie: any }) {
                 <Input type="number" name="runtimeMinutes" value={formData.runtimeMinutes} onChange={handleChange} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Release Date</label>
-                <Input type="date" name="releaseDate" value={formData.releaseDate} onChange={handleChange} />
+                <label className="block text-sm font-medium text-white/70 mb-1">Release Year</label>
+                <Input type="number" name="releaseYear" value={formData.releaseYear} onChange={handleChange} placeholder="e.g. 2024" />
               </div>
             </div>
           </div>
@@ -234,18 +242,28 @@ export default function EditMovieForm({ movie }: { movie: any }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-1">Poster Image (Leave empty to keep existing)</label>
+                {movie.posterUrl && !posterFile && (
+                  <div className="mb-2 w-24 h-36 rounded-md overflow-hidden border border-white/20">
+                    <img src={movie.posterUrl} alt="Current poster" className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <Input type="file" accept="image/*" onChange={(e) => setPosterFile(e.target.files?.[0] || null)} />
                 {uploadProgress.posters !== undefined && (
-                  <div className="mt-2 text-sm text-primary-400">
+                  <div className="mt-2 text-sm text-[#E50914]">
                     Uploading: {uploadProgress.posters}%
                   </div>
                 )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-1">Backdrop Image (Leave empty to keep existing)</label>
+                {movie.backdropUrl && !backdropFile && (
+                  <div className="mb-2 w-48 h-28 rounded-md overflow-hidden border border-white/20">
+                    <img src={movie.backdropUrl} alt="Current backdrop" className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <Input type="file" accept="image/*" onChange={(e) => setBackdropFile(e.target.files?.[0] || null)} />
                 {uploadProgress.backdrops !== undefined && (
-                  <div className="mt-2 text-sm text-primary-400">
+                  <div className="mt-2 text-sm text-[#E50914]">
                     Uploading: {uploadProgress.backdrops}%
                   </div>
                 )}

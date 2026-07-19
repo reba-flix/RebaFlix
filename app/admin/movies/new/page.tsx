@@ -37,7 +37,7 @@ export default function NewMoviePage() {
     externalVideoUrl: '',
     downloadUrl: '',
     runtimeMinutes: '',
-    releaseDate: '',
+    releaseYear: '',
     contentRating: '',
     featured: false,
     published: false,
@@ -129,11 +129,17 @@ export default function NewMoviePage() {
       if (backdropFile) backdropUrl = await uploadFile(backdropFile, 'backdrops')
       if (videoFile) videoUrl = await uploadFile(videoFile, 'videos')
 
+      const finalDescription = formData.translator.trim()
+        ? `${formData.description.trim()}\n\nTranslator: ${formData.translator.trim()}`
+        : formData.description.trim()
+
       const res = await fetch('/api/admin/movies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          description: finalDescription,
+          releaseDate: formData.releaseYear ? `${formData.releaseYear}-01-01T00:00:00Z` : undefined,
           posterUrl: posterUrl || undefined,
           backdropUrl: backdropUrl || undefined,
           videoUrl: videoUrl || undefined,
@@ -216,8 +222,8 @@ export default function NewMoviePage() {
                 <Input type="number" name="runtimeMinutes" value={formData.runtimeMinutes} onChange={handleChange} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Release Date</label>
-                <Input type="date" name="releaseDate" value={formData.releaseDate} onChange={handleChange} />
+                <label className="block text-sm font-medium text-white/70 mb-1">Release Year</label>
+                <Input type="number" name="releaseYear" value={formData.releaseYear} onChange={handleChange} placeholder="e.g. 2024" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-1">Content Rating</label>

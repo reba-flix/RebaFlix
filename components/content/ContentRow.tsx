@@ -21,6 +21,8 @@ type RowItem = {
   seasons?: Array<{ _count?: { episodes?: number }; episodes?: any[] }>
   _count?: { seasons?: number }
   episodeCount?: number
+  episodeCount?: number
+  releaseDate?: string | Date | null
 }
 
 type ContentRowProps = {
@@ -84,6 +86,7 @@ export function ContentRow({ title, items, type = 'movie' }: ContentRowProps) {
                 translator={item.translator ?? extractTranslator(item.description)}
                 genres={genreNames}
                 episodeCount={episodeCount}
+                releaseYear={item.releaseDate ? new Date(item.releaseDate).getFullYear() : undefined}
               />
             )
           })}

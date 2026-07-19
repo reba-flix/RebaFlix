@@ -23,12 +23,14 @@ export default function EditSeriesForm({ series }: { series: any }) {
   }, [])
 
   const extractTranslator = (desc: string) => {
-    const match = desc.match(/Translator:\s*(.+)$/i)
-    return match ? match[1] : ''
+    if (!desc) return ''
+    const match = desc.match(/Translator:\s*(.+?)(?=\n|$)/i)
+    return match ? match[1].trim() : ''
   }
   
   const stripTranslator = (desc: string) => {
-    return desc.replace(/\n\nTranslator:\s*(.+)$/i, '')
+    if (!desc) return ''
+    return desc.replace(/(?:\r?\n)*Translator:\s*.+?(?=\n|$)/i, '').trim()
   }
 
   const [formData, setFormData] = useState({
@@ -124,11 +126,16 @@ export default function EditSeriesForm({ series }: { series: any }) {
       if (posterFile) posterUrl = await uploadFile(posterFile, 'posters')
       if (backdropFile) backdropUrl = await uploadFile(backdropFile, 'backdrops')
 
+      const finalDescription = formData.translator.trim()
+        ? `${formData.description.trim()}\n\nTranslator: ${formData.translator.trim()}`
+        : formData.description.trim()
+
       const res = await fetch(`/api/admin/movies/${series.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          description: finalDescription,
           posterUrl: posterUrl || undefined,
           backdropUrl: backdropUrl || undefined,
         }),
@@ -218,18 +225,28 @@ export default function EditSeriesForm({ series }: { series: any }) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-1">Poster Image (Leave empty to keep existing)</label>
+                {series.posterUrl && !posterFile && (
+                  <div className="mb-2 w-24 h-36 rounded-md overflow-hidden border border-white/20">
+                    <img src={series.posterUrl} alt="Current poster" className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <Input type="file" accept="image/*" onChange={(e) => setPosterFile(e.target.files?.[0] || null)} />
                 {uploadProgress.posters !== undefined && (
-                  <div className="mt-2 text-sm text-primary-400">
+                  <div className="mt-2 text-sm text-[#E50914]">
                     Uploading: {uploadProgress.posters}%
                   </div>
                 )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-white/70 mb-1">Backdrop Image (Leave empty to keep existing)</label>
+                {series.backdropUrl && !backdropFile && (
+                  <div className="mb-2 w-48 h-28 rounded-md overflow-hidden border border-white/20">
+                    <img src={series.backdropUrl} alt="Current backdrop" className="w-full h-full object-cover" />
+                  </div>
+                )}
                 <Input type="file" accept="image/*" onChange={(e) => setBackdropFile(e.target.files?.[0] || null)} />
                 {uploadProgress.backdrops !== undefined && (
-                  <div className="mt-2 text-sm text-primary-400">
+                  <div className="mt-2 text-sm text-[#E50914]">
                     Uploading: {uploadProgress.backdrops}%
                   </div>
                 )}

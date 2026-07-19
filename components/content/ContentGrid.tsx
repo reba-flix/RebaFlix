@@ -18,6 +18,7 @@ export function ContentGrid({ items }: ContentGridProps) {
           type={item.type ?? (item.seasons ? 'series' : ('videoUrl' in item ? 'movie' : 'series'))}
           rating={item.averageRating}
           translator={item.translator ?? extractTranslator(item.description)}
+          releaseYear={item.releaseDate ? new Date(item.releaseDate).getFullYear() : undefined}
         />
       ))}
     </div>

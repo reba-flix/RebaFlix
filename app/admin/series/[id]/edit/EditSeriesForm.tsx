@@ -75,6 +75,7 @@ export default function EditSeriesForm({ series }: { series: any }) {
 
       const xhr = new XMLHttpRequest()
       xhr.open('POST', '/api/uploads')
+      xhr.withCredentials = true
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {

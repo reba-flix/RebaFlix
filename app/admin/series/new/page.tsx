@@ -66,6 +66,7 @@ export default function NewSeriesPage() {
 
       const xhr = new XMLHttpRequest()
       xhr.open('POST', '/api/uploads')
+      xhr.withCredentials = true
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {

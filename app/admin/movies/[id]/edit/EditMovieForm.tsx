@@ -80,6 +80,7 @@ export default function EditMovieForm({ movie }: { movie: any }) {
 
       const xhr = new XMLHttpRequest()
       xhr.open('POST', '/api/uploads')
+      xhr.withCredentials = true
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {

@@ -153,24 +153,6 @@ export default function LoginPage() {
                 'Sign in'
               )}
             </Button>
-
-
-            <Button
-              id="login-google"
-              className="w-full"
-              type="button"
-              variant="outline"
-              disabled={loading}
-              onClick={() =>
-                supabase.auth.signInWithOAuth({
-                  provider: 'google',
-                  options: { redirectTo: `${location.origin}/auth/callback?next=/` },
-                })
-              }
-            >
-              <GoogleIcon className="mr-2 h-4 w-4" />
-              Continue with Google
-            </Button>
           </form>
         </div>
 

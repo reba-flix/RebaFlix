@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
     // Guard: block if an admin user already exists
     const existingAdminRole = await prisma.role.findFirst({
-      where: { name: 'ADMIN' },
+      where: { name: 'SUPER_ADMIN' },
       include: { users: true },
     })
     if (existingAdminRole && existingAdminRole.users.length > 0) {
@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         email,
         password,
         email_confirm: true,
-        app_metadata: { role: 'ADMIN', protected_admin: true },
+        app_metadata: { role: 'SUPER_ADMIN', protected_admin: true },
       })
       if (error) throw error
       authUser = data.user
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       const { data, error } = await supabase.auth.admin.updateUserById(authUser.id, {
         password,
         email_confirm: true,
-        app_metadata: { ...authUser.app_metadata, role: 'ADMIN', protected_admin: true },
+        app_metadata: { ...authUser.app_metadata, role: 'SUPER_ADMIN', protected_admin: true },
       })
       if (error) throw error
       authUser = data.user
@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
 
     // 2. Ensure roles exist in DB
     const adminRole = await prisma.role.upsert({
-      where: { name: 'ADMIN' },
+      where: { name: 'SUPER_ADMIN' },
       update: {},
-      create: { name: 'ADMIN', description: 'Full platform administration' },
+      create: { name: 'SUPER_ADMIN', description: 'Full platform administration' },
     })
     await prisma.role.upsert({
       where: { name: 'USER' },

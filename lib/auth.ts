@@ -48,5 +48,8 @@ export async function requireUser() {
 }
 
 export function hasRole(user: Awaited<ReturnType<typeof getSessionUser>>, roleName: string) {
-  return Boolean(user?.roles.some(({ role }) => role.name === roleName))
+  if (!user) return false
+  const roles = user.roles.map(r => r.role.name)
+  if (roleName === 'ADMIN' && roles.includes('SUPER_ADMIN')) return true
+  return roles.includes(roleName)
 }

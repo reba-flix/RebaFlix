@@ -13,40 +13,44 @@ const sidebarLinks = [
   { name: 'Movies', href: '/admin/movies', icon: Film },
   { name: 'Series', href: '/admin/series', icon: Film },
   { name: 'Channels', href: '/admin/channels', icon: Radio },
-  { name: 'Users', href: '/admin/users', icon: Users },
-  { name: 'Revenue', href: '/admin/revenue', icon: CreditCard },
-  { name: 'Support Inbox', href: '/admin/inbox', icon: Inbox },
-  { name: 'System Logs', href: '/admin/logs', icon: Activity },
-  { name: 'Settings', href: '/admin/settings', icon: Settings },
+  { name: 'Users', href: '/admin/users', icon: Users, superAdminOnly: true },
+  { name: 'Revenue', href: '/admin/revenue', icon: CreditCard, superAdminOnly: true },
+  { name: 'Support Inbox', href: '/admin/inbox', icon: Inbox, superAdminOnly: true },
+  { name: 'System Logs', href: '/admin/logs', icon: Activity, superAdminOnly: true },
+  { name: 'Settings', href: '/admin/settings', icon: Settings, superAdminOnly: true },
 ]
 
-export function AdminSidebar() {
+export function AdminSidebar({ isSuperAdmin }: { isSuperAdmin?: boolean }) {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
 
-  const NavLinks = () => (
-    <nav className="flex flex-col gap-1 w-full">
-      {sidebarLinks.map((link) => {
-        const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`)
-        return (
-          <Link
-            key={link.name}
-            href={link.href}
-            onClick={() => setIsOpen(false)}
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
-              isActive 
-                ? "bg-white/10 text-white shadow-sm" 
-                : "text-white/70 hover:text-white hover:bg-white/5 active:scale-[0.98]"
-            )}
-          >
-            <link.icon className={cn("w-4 h-4 transition-colors", isActive ? "text-[#E50914]" : "text-white/40 group-hover:text-white")} />
-            {link.name}
-          </Link>
-        )
-      })}
-    </nav>
-  )
+  const NavLinks = () => {
+    const visibleLinks = sidebarLinks.filter(link => isSuperAdmin || !link.superAdminOnly)
+    
+    return (
+      <nav className="flex flex-col gap-1 w-full">
+        {visibleLinks.map((link) => {
+          const isActive = pathname === link.href || pathname.startsWith(`${link.href}/`)
+          return (
+            <Link
+              key={link.name}
+              href={link.href}
+              onClick={() => setIsOpen(false)}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all group",
+                isActive 
+                  ? "bg-white/10 text-white shadow-sm" 
+                  : "text-white/70 hover:text-white hover:bg-white/5 active:scale-[0.98]"
+              )}
+            >
+              <link.icon className={cn("w-4 h-4 transition-colors", isActive ? "text-[#E50914]" : "text-white/40 group-hover:text-white")} />
+              {link.name}
+            </Link>
+          )
+        })}
+      </nav>
+    )
+  }
 
   return (
     <>

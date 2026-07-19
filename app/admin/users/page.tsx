@@ -4,15 +4,21 @@ import { Users, TrendingUp } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { UserGrowthChart } from '@/components/admin/UserGrowthChart'
 import { format, subDays, isSameDay } from 'date-fns'
+import { UserRoleToggle } from './UserRoleToggle'
 
 export const dynamic = 'force-dynamic'
 
 export default async function AdminUsersPage() {
   const sessionUser = await getSessionUser()
-  if (!hasRole(sessionUser, 'ADMIN')) redirect('/')
+  if (!hasRole(sessionUser, 'SUPER_ADMIN')) redirect('/')
 
-  // Fetch all users
+  // Fetch all users with their roles
   const allUsers = await prisma.user.findMany({
+    include: {
+      roles: {
+        include: { role: true }
+      }
+    },
     orderBy: { createdAt: 'desc' }
   })
 
@@ -81,7 +87,10 @@ export default async function AdminUsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {allUsers.map((user) => (
+              {allUsers.map((user) => {
+                const isAdmin = user.roles.some(r => r.role.name === 'ADMIN')
+                const isSuperAdmin = user.roles.some(r => r.role.name === 'SUPER_ADMIN')
+                return (
                 <tr key={user.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
@@ -96,12 +105,15 @@ export default async function AdminUsersPage() {
                     {format(new Date(user.createdAt), 'MMM dd, yyyy')}
                   </td>
                   <td className="py-4 px-6 text-right">
-                    <button className="text-xs font-medium text-white/40 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded">
-                      Manage
-                    </button>
+                    <UserRoleToggle 
+                      userId={user.id} 
+                      isAdmin={isAdmin} 
+                      isSuperAdmin={isSuperAdmin} 
+                    />
                   </td>
                 </tr>
-              ))}
+                )
+              })}
               {allUsers.length === 0 && (
                 <tr>
                   <td colSpan={4} className="py-8 text-center text-white/50">

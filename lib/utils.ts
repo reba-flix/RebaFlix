@@ -29,6 +29,7 @@ export function isExternalVideoUrl(url?: string | null): boolean {
       'supabase.co',
       'supabase.in',
       'r2.cloudflarestorage.com',
+      'r2.dev',
       'cdn.rebaflix.com',
       'localhost',
       '127.0.0.1',
@@ -40,6 +41,16 @@ export function isExternalVideoUrl(url?: string | null): boolean {
         const appHostname = new URL(appUrl).hostname
         if (!internalDomains.includes(appHostname)) {
           internalDomains.push(appHostname)
+        }
+      } catch {}
+    }
+
+    const r2Public = process.env.R2_PUBLIC_URL
+    if (r2Public) {
+      try {
+        const r2Hostname = new URL(r2Public).hostname
+        if (!internalDomains.includes(r2Hostname)) {
+          internalDomains.push(r2Hostname)
         }
       } catch {}
     }

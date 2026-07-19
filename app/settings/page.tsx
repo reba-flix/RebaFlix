@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getSessionUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { SettingsForm } from './SettingsForm'
+import { PasswordUpdateForm } from './PasswordUpdateForm'
 import { ArrowLeft, Settings } from 'lucide-react'
 import Link from 'next/link'
 
@@ -51,6 +52,7 @@ export default async function SettingsPage() {
               phone: dbUser.phone ?? '',
             }}
           />
+          <PasswordUpdateForm />
         </div>
 
         {/* Info note */}

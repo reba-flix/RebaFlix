@@ -5,15 +5,24 @@ import { isExternalVideoUrl } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
-export default async function WatchPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ trailer?: string }> }) {
+export default async function WatchPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ trailer?: string }>
+}) {
   const [{ id }, query] = await Promise.all([params, searchParams])
-  
+
   let mediaTitle = ''
   let mediaPoster: string | null = null
   let src: string | null = null
   let mediaSubtitles: any[] = []
   let mediaId = id
   let mediaContentType: 'movie' | 'episode' = 'movie'
+  let seasons: any[] | undefined = undefined
+  let currentEpisodeId: string | undefined = undefined
+  let nextItem: { id: string; title: string } | undefined = undefined
 
   // Try fetching as movie first
   const movie = await prisma.movie.findUnique({
@@ -27,22 +36,68 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
     src = query.trailer ? movie.trailerUrl : movie.videoUrl
     mediaSubtitles = movie.subtitles
     mediaContentType = 'movie'
+
+    // Fetch next movie (most recent published movie that's not this one)
+    if (!query.trailer) {
+      const nextMovie = await prisma.movie.findFirst({
+        where: { published: true, id: { not: movie.id } },
+        orderBy: { createdAt: 'desc' },
+      })
+      if (nextMovie) {
+        nextItem = { id: nextMovie.id, title: nextMovie.title }
+      }
+    }
   } else {
-    // If not a movie, try fetching as an episode
+    // Try as episode
     const episode = await prisma.episode.findUnique({
       where: { id },
-      include: { 
+      include: {
         subtitles: { include: { language: true } },
-        season: { include: { series: true } }
+        season: {
+          include: {
+            series: true,
+            episodes: { orderBy: { number: 'asc' } },
+          },
+        },
       },
     })
-    
+
     if (episode) {
-      mediaTitle = `${episode.season.series.title} - ${episode.title || `Episode ${episode.number}`}`
+      mediaTitle = `${episode.season.series.title} — ${episode.title || `Episode ${episode.number}`}`
       mediaPoster = episode.thumbnailUrl || episode.season.series.backdropUrl
       src = episode.videoUrl
       mediaSubtitles = episode.subtitles
       mediaContentType = 'episode'
+      currentEpisodeId = episode.id
+
+      // Fetch all seasons + episodes for this series
+      const allSeasons = await prisma.season.findMany({
+        where: { seriesId: episode.season.seriesId },
+        orderBy: { number: 'asc' },
+        include: {
+          episodes: {
+            where: { published: true },
+            orderBy: { number: 'asc' },
+            select: { id: true, number: true, title: true, thumbnailUrl: true, runtimeMinutes: true },
+          },
+        },
+      })
+      seasons = allSeasons
+
+      // Find next episode (same season first, then next season)
+      const currentSeasonEps = episode.season.episodes.sort((a, b) => a.number - b.number)
+      const currentIndex = currentSeasonEps.findIndex(e => e.id === episode.id)
+      if (currentIndex >= 0 && currentIndex < currentSeasonEps.length - 1) {
+        const next = currentSeasonEps[currentIndex + 1]
+        nextItem = { id: next.id, title: `E${next.number}: ${next.title || `Episode ${next.number}`}` }
+      } else {
+        // Look for the first episode of the next season
+        const nextSeasonData = allSeasons.find(s => s.number === episode.season.number + 1)
+        if (nextSeasonData?.episodes?.[0]) {
+          const ne = nextSeasonData.episodes[0]
+          nextItem = { id: ne.id, title: `S${nextSeasonData.number} E${ne.number}: ${ne.title || `Episode ${ne.number}`}` }
+        }
+      }
     } else {
       notFound()
     }
@@ -58,7 +113,9 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-white mb-3">Video Not Available</h1>
-          <p className="text-white/60 mb-6">The video for <span className="text-white font-semibold">{mediaTitle}</span> hasn&apos;t been uploaded yet. Please check back later or contact the admin.</p>
+          <p className="text-white/60 mb-6">
+            The video for <span className="text-white font-semibold">{mediaTitle}</span> hasn&apos;t been uploaded yet.
+          </p>
           <a href="javascript:history.back()" className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3 rounded-md transition-colors">
             ← Go Back
           </a>
@@ -67,11 +124,10 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
     )
   }
 
-  // If the video is an external link, redirect the user there
+  // If external link, redirect
   if (isExternalVideoUrl(src)) {
     redirect(src)
   }
-
 
   return (
     <main className="min-h-screen bg-black px-4 pb-8 pt-24 md:px-8 lg:px-12">
@@ -79,7 +135,7 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
         src={src}
         poster={mediaPoster}
         title={mediaTitle}
-        subtitles={mediaSubtitles.map((subtitle) => ({
+        subtitles={mediaSubtitles.map(subtitle => ({
           src: subtitle.url,
           label: subtitle.label,
           srcLang: subtitle.language.code,
@@ -87,6 +143,9 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
         }))}
         contentId={mediaId}
         contentType={mediaContentType}
+        seasons={seasons}
+        currentEpisodeId={currentEpisodeId}
+        nextItem={nextItem}
       />
     </main>
   )

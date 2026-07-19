@@ -36,7 +36,12 @@ export async function getHomeCatalog() {
         where: { published: true },
         orderBy: { createdAt: 'desc' },
         take: 18,
-        include: { genres: { include: { genre: true } } },
+        include: {
+          genres: { include: { genre: true } },
+          seasons: {
+            include: { _count: { select: { episodes: true } } },
+          },
+        },
       }),
       prisma.movie.findMany({
         where: { published: true, genres: { some: { genre: { name: { contains: 'kids', mode: 'insensitive' } } } } },

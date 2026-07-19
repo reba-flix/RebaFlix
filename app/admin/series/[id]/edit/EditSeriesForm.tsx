@@ -67,15 +67,30 @@ export default function EditSeriesForm({ series }: { series: any }) {
     })
   }
 
-  const uploadFile = (file: File, folder: string): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const data = new FormData()
-      data.append('file', file)
-      data.append('folder', folder)
+  const uploadFile = async (file: File, folder: string): Promise<string> => {
+    // 1. Get presigned URL
+    const res = await fetch('/api/uploads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: file.name,
+        contentType: file.type,
+        folder,
+      }),
+    })
 
+    if (!res.ok) {
+      const err = await res.json()
+      throw new Error(err.error || `Failed to get upload URL for ${folder}`)
+    }
+
+    const { uploadUrl, url } = await res.json()
+
+    // 2. Upload file directly to R2
+    return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()
-      xhr.open('POST', '/api/uploads')
-      xhr.withCredentials = true
+      xhr.open('PUT', uploadUrl)
+      xhr.setRequestHeader('Content-Type', file.type)
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
@@ -86,25 +101,14 @@ export default function EditSeriesForm({ series }: { series: any }) {
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          try {
-            const json = JSON.parse(xhr.responseText)
-            setUploadProgress(prev => ({ ...prev, [folder]: 100 }))
-            resolve(json.url)
-          } catch (e) {
-            reject(new Error('Invalid JSON response'))
-          }
+          setUploadProgress(prev => ({ ...prev, [folder]: 100 }))
+          resolve(url)
         } else {
-          try {
-            const errorData = JSON.parse(xhr.responseText)
-            reject(new Error(errorData.error || `Failed to upload ${folder}`))
-          } catch (e) {
-            reject(new Error(`Failed to upload ${folder}`))
-          }
+          reject(new Error(`Failed to upload ${folder} to R2 (Status: ${xhr.status})`))
         }
       }
-
       xhr.onerror = () => reject(new Error(`Network error while uploading ${folder}`))
-      xhr.send(data)
+      xhr.send(file)
     })
   }
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { hasRole, requireUser } from '@/lib/auth'
 import { rateLimit } from '@/lib/rate-limit'
-import { assertMediaFolder, uploadToR2 } from '@/lib/storage'
+import { assertMediaFolder, generatePresignedUrl } from '@/lib/storage'
 import { env } from '@/lib/env'
 import crypto from 'node:crypto'
 
@@ -22,12 +22,17 @@ export async function POST(request: NextRequest) {
   if (response) return response
   if (!hasRole(user, 'ADMIN')) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const form = await request.formData()
-  const file = form.get('file')
-  const folder = String(form.get('folder') ?? 'posters')
+  let body
+  try {
+    body = await request.json()
+  } catch (e) {
+    return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 })
+  }
 
-  if (!(file instanceof File)) {
-    return NextResponse.json({ error: 'file is required' }, { status: 400 })
+  const { filename, contentType, folder = 'posters' } = body
+
+  if (!filename || !contentType) {
+    return NextResponse.json({ error: 'filename and contentType are required' }, { status: 400 })
   }
 
   // Validate media folder
@@ -40,24 +45,23 @@ export async function POST(request: NextRequest) {
 
   // Validate MIME type for the target folder
   const allowedTypes = ALLOWED_MIME_TYPES[mediaFolder] ?? []
-  const fileMime = file.type || ''
-  if (allowedTypes.length > 0 && !allowedTypes.some(t => fileMime.startsWith(t.split('/')[0]))) {
+  if (allowedTypes.length > 0 && !allowedTypes.some(t => contentType.startsWith(t.split('/')[0]))) {
     const friendlyAllowed = allowedTypes.join(', ')
     return NextResponse.json(
-      { error: `File type "${fileMime}" is not allowed for folder "${mediaFolder}". Allowed: ${friendlyAllowed}` },
+      { error: `File type "${contentType}" is not allowed for folder "${mediaFolder}". Allowed: ${friendlyAllowed}` },
       { status: 415 }
     )
   }
 
   // Build a safe, unique object key: folder/uuid-originalname
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-')
+  const safeName = filename.replace(/[^a-zA-Z0-9._-]/g, '-')
   const key = `${mediaFolder}/${crypto.randomUUID()}-${safeName}`
 
   try {
-    const url = await uploadToR2(key, file)
-    return NextResponse.json({ bucket: env.r2BucketName, key, url }, { status: 201 })
+    const { uploadUrl, publicUrl } = await generatePresignedUrl(key, contentType)
+    return NextResponse.json({ bucket: env.r2BucketName, key, uploadUrl, url: publicUrl }, { status: 201 })
   } catch (error: any) {
-    console.error('[R2 Upload Error]', error)
+    console.error('[R2 Presign Error]', error)
     return NextResponse.json({ error: error.message || 'Storage provider error' }, { status: 500 })
   }
 }

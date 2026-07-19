@@ -1,4 +1,5 @@
 import { PutObjectCommand } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { getR2Client } from '@/lib/r2'
 import { env } from '@/lib/env'
 
@@ -38,4 +39,25 @@ export async function uploadToR2(key: string, file: File): Promise<string> {
     : `${env.r2Endpoint.replace(/\/$/, '')}/${env.r2BucketName}/${key}`
 
   return publicUrl
+}
+
+/**
+ * Generates a presigned URL for direct client-side upload to Cloudflare R2.
+ */
+export async function generatePresignedUrl(key: string, contentType: string): Promise<{ uploadUrl: string, publicUrl: string }> {
+  const r2 = getR2Client()
+
+  const command = new PutObjectCommand({
+    Bucket: env.r2BucketName,
+    Key: key,
+    ContentType: contentType,
+  })
+
+  const uploadUrl = await getSignedUrl(r2, command, { expiresIn: 3600 })
+
+  const publicUrl = env.r2PublicUrl
+    ? `${env.r2PublicUrl.replace(/\/$/, '')}/${key}`
+    : `${env.r2Endpoint.replace(/\/$/, '')}/${env.r2BucketName}/${key}`
+
+  return { uploadUrl, publicUrl }
 }

@@ -48,7 +48,24 @@ export default async function WatchPage({ params, searchParams }: { params: Prom
     }
   }
 
-  if (!src) notFound()
+  if (!src) {
+    return (
+      <main className="min-h-screen bg-black flex items-center justify-center px-4">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 rounded-full bg-white/10 flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-10 h-10 text-white/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 9.75v9A2.25 2.25 0 004.5 18.75z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-3">Video Not Available</h1>
+          <p className="text-white/60 mb-6">The video for <span className="text-white font-semibold">{mediaTitle}</span> hasn&apos;t been uploaded yet. Please check back later or contact the admin.</p>
+          <a href="javascript:history.back()" className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white font-semibold px-6 py-3 rounded-md transition-colors">
+            ← Go Back
+          </a>
+        </div>
+      </main>
+    )
+  }
 
   // If the video is an external link, redirect the user there
   if (isExternalVideoUrl(src)) {

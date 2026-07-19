@@ -35,6 +35,17 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "**.r2.cloudflarestorage.com",
       },
+      {
+        // Cloudflare R2 public bucket URLs (pub-*.r2.dev)
+        protocol: "https",
+        hostname: "**.r2.dev",
+      },
+      {
+        // Custom CDN domain for R2 (e.g. cdn.rebaflix.com)
+        // Update this hostname if you set up a custom domain in Cloudflare
+        protocol: "https",
+        hostname: "cdn.rebaflix.com",
+      },
     ],
   },
   experimental: {

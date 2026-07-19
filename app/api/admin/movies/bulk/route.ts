@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
             title: item.title,
             slug,
             description: item.description || '',
-            releaseDate,
             posterUrl: item.posterUrl || null,
             published: true,
           }

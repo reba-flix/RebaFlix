@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Play, Download, Languages } from 'lucide-react'
@@ -10,10 +10,18 @@ import { isExternalVideoUrl } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
+function toSeriesSlug(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+}
+
 export default async function SeriesPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+  const decodedSlug = decodeURIComponent(slug)
   
-  const series = await prisma.series.findUnique({
+  let series = await prisma.series.findUnique({
     where: { slug },
     include: {
       genres: { include: { genre: true } },
@@ -28,6 +36,35 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
       }
     }
   })
+
+  if (!series) {
+    series = await prisma.series.findFirst({
+      where: {
+        published: true,
+        OR: [
+          { slug: toSeriesSlug(decodedSlug) },
+          { title: { equals: decodedSlug, mode: 'insensitive' } },
+          { title: { equals: decodedSlug.replace(/-/g, ' '), mode: 'insensitive' } },
+        ],
+      },
+      include: {
+        genres: { include: { genre: true } },
+        seasons: {
+          include: {
+            episodes: {
+              where: { published: true },
+              orderBy: { number: 'asc' }
+            }
+          },
+          orderBy: { number: 'asc' }
+        }
+      }
+    })
+
+    if (series && series.slug !== slug) {
+      redirect(`/series/${series.slug}`)
+    }
+  }
 
   if (!series) {
     notFound()

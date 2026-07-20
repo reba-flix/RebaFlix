@@ -1,407 +1,557 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { AlertCircle, CheckCircle2, Film, Loader2, Plus, Trash2, UploadCloud } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2, UploadCloud, X } from 'lucide-react'
+
+const MAX_MOVIES = 10
+
+type Genre = { id: string; name: string }
+type MediaFolder = 'posters' | 'backdrops' | 'videos'
+type UploadState = 'idle' | 'uploading' | 'saving' | 'done' | 'error'
+
+type MovieDraft = {
+  id: string
+  type: 'movie' | 'series'
+  title: string
+  slug: string
+  tagline: string
+  description: string
+  translator: string
+  externalVideoUrl: string
+  downloadUrl: string
+  runtimeMinutes: string
+  releaseYear: string
+  contentRating: string
+  featured: boolean
+  published: boolean
+  isOldContent: boolean
+  genreIds: string[]
+  posterFile: File | null
+  backdropFile: File | null
+  videoFile: File | null
+}
+
+type MovieProgress = {
+  state: UploadState
+  posters?: number
+  backdrops?: number
+  videos?: number
+  error?: string
+}
+
+const createDraft = (): MovieDraft => ({
+  id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+  type: 'movie',
+  title: '',
+  slug: '',
+  tagline: '',
+  description: '',
+  translator: '',
+  externalVideoUrl: '',
+  downloadUrl: '',
+  runtimeMinutes: '',
+  releaseYear: '',
+  contentRating: '',
+  featured: false,
+  published: false,
+  isOldContent: false,
+  genreIds: [],
+  posterFile: null,
+  backdropFile: null,
+  videoFile: null,
+})
 
 export default function NewMoviePage() {
   const router = useRouter()
+  const [movies, setMovies] = useState<MovieDraft[]>([createDraft()])
+  const [genres, setGenres] = useState<Genre[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  
-  // Metadata options
-  const [genres, setGenres] = useState<{id: string, name: string}[]>([])
-  const [languages, setLanguages] = useState<{id: string, name: string}[]>([])
+  const [success, setSuccess] = useState<string | null>(null)
+  const [progress, setProgress] = useState<Record<string, MovieProgress>>({})
 
   useEffect(() => {
-    // Fetch genres and languages for the form (we'll implement this endpoint next if needed, or fetch from a general meta endpoint)
-    // For now, let's just create a quick metadata fetcher
     fetch('/api/admin/metadata')
-      .then(res => res.json())
-      .then(data => {
+      .then((res) => res.json())
+      .then((data) => {
         if (data.genres) setGenres(data.genres)
-        if (data.languages) setLanguages(data.languages)
       })
       .catch(console.error)
   }, [])
 
-  const [formData, setFormData] = useState({
-    type: 'movie',
-    title: '',
-    slug: '',
-    tagline: '',
-    description: '',
-    translator: '',
-    externalVideoUrl: '',
-    downloadUrl: '',
-    runtimeMinutes: '',
-    releaseYear: '',
-    contentRating: '',
-    featured: false,
-    published: false,
-    isOldContent: false,
-    genreIds: [] as string[],
-  })
+  const completedCount = useMemo(
+    () => Object.values(progress).filter((item) => item.state === 'done').length,
+    [progress]
+  )
 
-  // File uploads state
-  const [posterFile, setPosterFile] = useState<File | null>(null)
-  const [backdropFile, setBackdropFile] = useState<File | null>(null)
-  const [videoFile, setVideoFile] = useState<File | null>(null)
-  
-  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({})
+  const updateMovie = <K extends keyof MovieDraft>(id: string, key: K, value: MovieDraft[K]) => {
+    setMovies((current) => current.map((movie) => (movie.id === id ? { ...movie, [key]: value } : movie)))
+  }
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (
+    id: string,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target
     const checked = (e.target as HTMLInputElement).checked
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
+    updateMovie(id, name as keyof MovieDraft, (type === 'checkbox' ? checked : value) as never)
+  }
+
+  const toggleGenre = (movieId: string, genreId: string) => {
+    setMovies((current) =>
+      current.map((movie) => {
+        if (movie.id !== movieId) return movie
+        const genreIds = movie.genreIds.includes(genreId)
+          ? movie.genreIds.filter((id) => id !== genreId)
+          : [...movie.genreIds, genreId]
+        return { ...movie, genreIds }
+      })
+    )
+  }
+
+  const addMovie = () => {
+    if (movies.length >= MAX_MOVIES) return
+    setMovies((current) => [...current, createDraft()])
+  }
+
+  const removeMovie = (id: string) => {
+    setMovies((current) => (current.length === 1 ? current : current.filter((movie) => movie.id !== id)))
+    setProgress((current) => {
+      const next = { ...current }
+      delete next[id]
+      return next
+    })
+  }
+
+  const setMovieProgress = (movieId: string, patch: Partial<MovieProgress>) => {
+    setProgress((current) => ({
+      ...current,
+      [movieId]: { ...(current[movieId] ?? { state: 'idle' as UploadState }), ...patch },
     }))
   }
 
-  const handleGenreToggle = (genreId: string) => {
-    setFormData(prev => {
-      const ids = prev.genreIds.includes(genreId)
-        ? prev.genreIds.filter(id => id !== genreId)
-        : [...prev.genreIds, genreId]
-      return { ...prev, genreIds: ids }
-    })
-  }
-
-  const uploadFile = async (file: File, folder: string): Promise<string> => {
-    // 1. Get presigned URL
+  const uploadFile = async (movieId: string, file: File, folder: MediaFolder): Promise<string> => {
     const res = await fetch('/api/uploads', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        filename: file.name,
-        contentType: file.type,
-        folder,
-      }),
+      body: JSON.stringify({ filename: file.name, contentType: file.type, folder }),
     })
 
-    if (!res.ok) {
-      const err = await res.json()
-      throw new Error(err.error || `Failed to get upload URL for ${folder}`)
-    }
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || `Failed to prepare ${folder} upload`)
 
-    const { uploadUrl, url } = await res.json()
-
-    // 2. Upload file directly to R2
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest()
-      xhr.open('PUT', uploadUrl)
+      xhr.open('PUT', data.uploadUrl)
       xhr.setRequestHeader('Content-Type', file.type)
 
       xhr.upload.onprogress = (event) => {
         if (event.lengthComputable) {
-          const percent = Math.round((event.loaded / event.total) * 100)
-          setUploadProgress(prev => ({ ...prev, [folder]: percent }))
+          setMovieProgress(movieId, { [folder]: Math.round((event.loaded / event.total) * 100) })
         }
       }
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
-          setUploadProgress(prev => ({ ...prev, [folder]: 100 }))
-          resolve(url)
+          setMovieProgress(movieId, { [folder]: 100 })
+          resolve(data.url)
         } else {
-          reject(new Error(`Failed to upload ${folder} to R2 (Status: ${xhr.status})`))
+          reject(new Error(`Failed to upload ${file.name} (${xhr.status})`))
         }
       }
 
-      xhr.onerror = () => reject(new Error(`Network error while uploading ${folder}`))
+      xhr.onerror = () => reject(new Error(`Network error while uploading ${file.name}`))
       xhr.send(file)
     })
+  }
+
+  const createMovie = async (movie: MovieDraft) => {
+    setMovieProgress(movie.id, { state: 'uploading', error: undefined })
+
+    const [posterUrl, backdropUrl, videoUrl] = await Promise.all([
+      movie.posterFile ? uploadFile(movie.id, movie.posterFile, 'posters') : Promise.resolve(''),
+      movie.backdropFile ? uploadFile(movie.id, movie.backdropFile, 'backdrops') : Promise.resolve(''),
+      movie.videoFile ? uploadFile(movie.id, movie.videoFile, 'videos') : Promise.resolve(''),
+    ])
+
+    setMovieProgress(movie.id, { state: 'saving' })
+
+    const finalDescription = movie.translator.trim()
+      ? `${movie.description.trim()}\n\nTranslator: ${movie.translator.trim()}`
+      : movie.description.trim()
+
+    const res = await fetch('/api/admin/movies', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: movie.type,
+        title: movie.title.trim(),
+        slug: movie.slug.trim() || undefined,
+        tagline: movie.tagline.trim() || undefined,
+        description: finalDescription,
+        releaseDate: movie.releaseYear ? `${movie.releaseYear}-01-01T00:00:00Z` : undefined,
+        posterUrl: posterUrl || undefined,
+        backdropUrl: backdropUrl || undefined,
+        videoUrl: videoUrl || undefined,
+        externalVideoUrl: movie.externalVideoUrl.trim() || undefined,
+        downloadUrl: movie.downloadUrl.trim() || undefined,
+        runtimeMinutes: movie.runtimeMinutes || undefined,
+        contentRating: movie.contentRating || undefined,
+        featured: movie.featured,
+        published: movie.published,
+        isOldContent: movie.isOldContent,
+        genreIds: movie.genreIds,
+      }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || `Failed to create ${movie.title}`)
+    setMovieProgress(movie.id, { state: 'done' })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setSuccess(null)
+
+    const invalid = movies.find((movie) => !movie.title.trim() || !movie.description.trim())
+    if (invalid) {
+      setError('Every movie needs a title and description before uploading.')
+      setLoading(false)
+      return
+    }
 
     try {
-      let posterUrl = ''
-      let backdropUrl = ''
-      let videoUrl = ''
+      const results = await Promise.allSettled(movies.map((movie) => createMovie(movie)))
+      const failed = results.filter((result) => result.status === 'rejected')
 
-      if (posterFile) posterUrl = await uploadFile(posterFile, 'posters')
-      if (backdropFile) backdropUrl = await uploadFile(backdropFile, 'backdrops')
-      if (videoFile) videoUrl = await uploadFile(videoFile, 'videos')
-
-      const finalDescription = formData.translator.trim()
-        ? `${formData.description.trim()}\n\nTranslator: ${formData.translator.trim()}`
-        : formData.description.trim()
-
-      const res = await fetch('/api/admin/movies', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          description: finalDescription,
-          releaseDate: formData.releaseYear ? `${formData.releaseYear}-01-01T00:00:00Z` : undefined,
-          posterUrl: posterUrl || undefined,
-          backdropUrl: backdropUrl || undefined,
-          videoUrl: videoUrl || undefined,
-          externalVideoUrl: formData.externalVideoUrl || undefined,
-          downloadUrl: formData.downloadUrl || undefined,
-        }),
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          setMovieProgress(movies[index].id, {
+            state: 'error',
+            error: result.reason instanceof Error ? result.reason.message : 'Upload failed',
+          })
+        }
       })
 
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to create movie')
+      if (failed.length > 0) {
+        setError(`${failed.length} item${failed.length === 1 ? '' : 's'} failed. Fix the failed rows and submit again.`)
+        return
       }
 
-      router.push('/admin/movies')
-      router.refresh()
+      setSuccess(`Created ${movies.length} item${movies.length === 1 ? '' : 's'} successfully.`)
+      setTimeout(() => {
+        router.push('/admin/movies')
+        router.refresh()
+      }, 1200)
     } catch (err: any) {
-      setError(err.message)
+      setError(err.message || 'Upload failed')
+    } finally {
       setLoading(false)
     }
   }
 
   return (
-    <main className="min-h-screen px-4 pb-16 pt-28 md:px-8 lg:px-12">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="font-display text-4xl font-black md:text-5xl mb-8">Add New Movie</h1>
-
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <div className="rounded-md border border-white/10 bg-white/[0.03] p-6 space-y-4">
-            <h2 className="text-xl font-bold">Basic Information</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Type *</label>
-                <select 
-                  name="type" 
-                  value={formData.type} 
-                  onChange={handleChange}
-                  className="flex h-10 w-full rounded-md border border-white/10 bg-black px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-                >
-                  <option value="movie">Movie</option>
-                  <option value="series">Series</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Title *</label>
-                <Input required name="title" value={formData.title} onChange={handleChange} />
-              </div>
+    <main className="min-h-screen px-4 pb-16 pt-8 md:px-8 lg:px-12">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div>
+            <div className="mb-3 flex items-center gap-3 text-[#E50914]">
+              <Film className="h-7 w-7" />
+              <span className="text-sm font-bold uppercase tracking-wide">Admin upload queue</span>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Slug (optional)</label>
-                <Input name="slug" value={formData.slug} onChange={handleChange} placeholder="auto-generated-if-empty" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Tagline</label>
-                <Input name="tagline" value={formData.tagline} onChange={handleChange} />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">Translator</label>
-              <Input name="translator" value={formData.translator} onChange={handleChange} placeholder="Translator name/details" />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-1">Description *</label>
-              <textarea 
-                required 
-                name="description" 
-                value={formData.description} 
-                onChange={handleChange}
-                className="w-full min-h-[100px] rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
-              />
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Runtime (minutes)</label>
-                <Input type="number" name="runtimeMinutes" value={formData.runtimeMinutes} onChange={handleChange} />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Release Year</label>
-                <Input type="number" name="releaseYear" value={formData.releaseYear} onChange={handleChange} placeholder="e.g. 2024" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Content Rating</label>
-                <select 
-                  name="contentRating" 
-                  value={formData.contentRating} 
-                  onChange={handleChange}
-                  className="flex h-10 w-full rounded-md border border-white/10 bg-black px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
-                >
-                  <option value="">None</option>
-                  <option value="G">G</option>
-                  <option value="PG">PG</option>
-                  <option value="PG_13">PG-13</option>
-                  <option value="R">R</option>
-                  <option value="NC_17">NC-17</option>
-                </select>
-              </div>
-            </div>
+            <h1 className="font-display text-3xl font-black text-white md:text-5xl">Add Movies</h1>
+            <p className="mt-2 max-w-2xl text-sm text-white/50">
+              Create one movie as before, or queue up to {MAX_MOVIES} movies and upload their videos together.
+            </p>
           </div>
+          <Button type="button" variant="outline" onClick={addMovie} disabled={loading || movies.length >= MAX_MOVIES}>
+            <Plus className="h-4 w-4" />
+            Add another movie
+          </Button>
+        </div>
 
-          <div className="rounded-md border border-white/10 bg-white/[0.03] p-6 space-y-4">
-            <h2 className="text-xl font-bold">Media Uploads</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Poster Image</label>
-                <Input type="file" accept="image/*" onChange={(e) => setPosterFile(e.target.files?.[0] || null)} />
-                {uploadProgress.posters !== undefined && (
-                  <div className="mt-2 text-sm text-primary-400">
-                    Uploading: {uploadProgress.posters}%
-                    <div className="w-full bg-white/10 rounded-full h-1 mt-1">
-                      <div className="bg-primary-500 h-1 rounded-full transition-all duration-300" style={{ width: `${uploadProgress.posters}%` }}></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white/70 mb-1">Backdrop Image</label>
-                <Input type="file" accept="image/*" onChange={(e) => setBackdropFile(e.target.files?.[0] || null)} />
-                {uploadProgress.backdrops !== undefined && (
-                  <div className="mt-2 text-sm text-primary-400">
-                    Uploading: {uploadProgress.backdrops}%
-                    <div className="w-full bg-white/10 rounded-full h-1 mt-1">
-                      <div className="bg-primary-500 h-1 rounded-full transition-all duration-300" style={{ width: `${uploadProgress.backdrops}%` }}></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-white/70 mb-1">Video File</label>
-                <Input type="file" accept="video/*" onChange={(e) => setVideoFile(e.target.files?.[0] || null)} />
-                <p className="text-xs text-white/40 mt-1">Leave empty if you intend to stream externally or upload later.</p>
-                {uploadProgress.videos !== undefined && (
-                  <div className="mt-2 text-sm text-primary-400">
-                    Uploading video: {uploadProgress.videos}%
-                    <div className="w-full bg-white/10 rounded-full h-1.5 mt-1">
-                      <div className="bg-primary-500 h-1.5 rounded-full transition-all duration-300" style={{ width: `${uploadProgress.videos}%` }}></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-white/70 mb-1">Direct Video Link (Optional)</label>
-                <Input name="externalVideoUrl" value={formData.externalVideoUrl} onChange={handleChange} placeholder="https://example.com/video.mp4" />
-                <p className="text-xs text-white/40 mt-1">If you provide this, you don't need to upload a video file above.</p>
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-white/70 mb-1">Download Link (MediaFire etc.)</label>
-                <Input name="downloadUrl" value={formData.downloadUrl} onChange={handleChange} placeholder="https://www.mediafire.com/file/..." />
-                <p className="text-xs text-white/40 mt-1">This will show a download button to users.</p>
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="rounded-md border border-white/10 bg-white/[0.03] p-4">
+            <div className="flex flex-col gap-3 text-sm text-white/60 md:flex-row md:items-center md:justify-between">
+              <span>{movies.length} of {MAX_MOVIES} upload slots in use</span>
+              <span>{completedCount} completed</span>
             </div>
-          </div>
-
-          <div className="rounded-md border border-white/10 bg-white/[0.03] p-6 space-y-4">
-            <h2 className="text-xl font-bold">Taxonomy & Visibility</h2>
-            
-            <div>
-              <label className="block text-sm font-medium text-white/70 mb-2">Genres</label>
-              <div className="flex flex-wrap gap-2">
-                {genres.map(g => (
-                  <label key={g.id} className="flex items-center space-x-2 bg-white/5 px-3 py-1.5 rounded-full cursor-pointer hover:bg-white/10">
-                    <input 
-                      type="checkbox" 
-                      checked={formData.genreIds.includes(g.id)} 
-                      onChange={() => handleGenreToggle(g.id)} 
-                      className="rounded bg-black border-white/20 text-primary-500 focus:ring-primary-500"
-                    />
-                    <span className="text-sm">{g.name}</span>
-                  </label>
-                ))}
-                {genres.length === 0 && <span className="text-sm text-white/40">Loading genres...</span>}
-              </div>
-            </div>
-
-            <div className="flex space-x-6 pt-4">
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  name="published" 
-                  checked={formData.published} 
-                  onChange={handleChange} 
-                  className="rounded bg-black border-white/20 text-primary-500 focus:ring-primary-500 h-5 w-5"
+            {loading && (
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+                <div
+                  className="h-full rounded-full bg-[#E50914] transition-all"
+                  style={{ width: `${Math.round((completedCount / movies.length) * 100)}%` }}
                 />
-                <span>Published (Visible to users)</span>
-              </label>
-              <label className="flex items-center space-x-2 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  name="featured" 
-                  checked={formData.featured} 
-                  onChange={handleChange} 
-                  className="rounded bg-black border-white/20 text-primary-500 focus:ring-primary-500 h-5 w-5"
-                />
-                <span>Featured (Show on homepage banner)</span>
-              </label>
-            </div>
-
-            {/* Old vs New Content Ordering */}
-            <div className="pt-4 border-t border-white/10">
-              <label className="block text-sm font-semibold text-white mb-3">
-                Content Order on Website
-              </label>
-              <p className="text-xs text-white/40 mb-3">
-                &ldquo;New Release&rdquo; will appear first in all listings. &ldquo;Old Movie&rdquo; will be pushed to the end — use this for archive content you are uploading that shouldn&apos;t look new.
-              </p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, isOldContent: false }))}
-                  className={`flex-1 flex flex-col items-center gap-1.5 py-4 px-3 rounded-xl border-2 transition-all ${
-                    !formData.isOldContent
-                      ? 'border-[#E50914] bg-[#E50914]/10 text-white'
-                      : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20'
-                  }`}
-                >
-                  <span className="text-2xl">✨</span>
-                  <span className="text-sm font-bold">New Release</span>
-                  <span className="text-xs opacity-70">Shows first in listings</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData(prev => ({ ...prev, isOldContent: true }))}
-                  className={`flex-1 flex flex-col items-center gap-1.5 py-4 px-3 rounded-xl border-2 transition-all ${
-                    formData.isOldContent
-                      ? 'border-amber-500 bg-amber-500/10 text-white'
-                      : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20'
-                  }`}
-                >
-                  <span className="text-2xl">📦</span>
-                  <span className="text-sm font-bold">Old Movie</span>
-                  <span className="text-xs opacity-70">Shows last in listings</span>
-                </button>
               </div>
-            </div>
+            )}
           </div>
 
-          {error && (
-            <div className="rounded-md bg-red-500/10 border border-red-500/20 p-4 text-red-400">
-              {error}
-            </div>
-          )}
+          {movies.map((movie, index) => {
+            const itemProgress = progress[movie.id]
+            const locked = loading && itemProgress?.state !== 'error'
 
-          <div className="flex justify-end gap-4">
+            return (
+              <section key={movie.id} className="rounded-md border border-white/10 bg-white/[0.03] p-5">
+                <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-white">Movie {index + 1}</h2>
+                    <p className="text-sm text-white/40">{movie.title || 'New upload item'}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {itemProgress?.state === 'uploading' && <StatusPill icon={<Loader2 className="h-3.5 w-3.5 animate-spin" />} text="Uploading" />}
+                    {itemProgress?.state === 'saving' && <StatusPill icon={<Loader2 className="h-3.5 w-3.5 animate-spin" />} text="Saving" />}
+                    {itemProgress?.state === 'done' && <StatusPill icon={<CheckCircle2 className="h-3.5 w-3.5" />} text="Done" tone="success" />}
+                    {itemProgress?.state === 'error' && <StatusPill icon={<AlertCircle className="h-3.5 w-3.5" />} text="Failed" tone="danger" />}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => removeMovie(movie.id)}
+                      disabled={loading || movies.length === 1}
+                      aria-label="Remove movie"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <Field label="Type">
+                    <select
+                      name="type"
+                      value={movie.type}
+                      onChange={(e) => handleChange(movie.id, e)}
+                      disabled={locked}
+                      className="flex h-10 w-full rounded-md border border-white/10 bg-black px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                    >
+                      <option value="movie">Movie</option>
+                      <option value="series">Series</option>
+                    </select>
+                  </Field>
+                  <Field label="Title *">
+                    <Input required name="title" value={movie.title} onChange={(e) => handleChange(movie.id, e)} disabled={locked} />
+                  </Field>
+                  <Field label="Slug (optional)">
+                    <Input name="slug" value={movie.slug} onChange={(e) => handleChange(movie.id, e)} disabled={locked} placeholder="auto-generated-if-empty" />
+                  </Field>
+                  <Field label="Tagline">
+                    <Input name="tagline" value={movie.tagline} onChange={(e) => handleChange(movie.id, e)} disabled={locked} />
+                  </Field>
+                  <Field label="Translator">
+                    <Input name="translator" value={movie.translator} onChange={(e) => handleChange(movie.id, e)} disabled={locked} placeholder="Translator name/details" />
+                  </Field>
+                  <Field label="Release Year">
+                    <Input type="number" name="releaseYear" value={movie.releaseYear} onChange={(e) => handleChange(movie.id, e)} disabled={locked} placeholder="e.g. 2024" />
+                  </Field>
+                  <div className="md:col-span-2">
+                    <Field label="Description *">
+                      <textarea
+                        required
+                        name="description"
+                        value={movie.description}
+                        onChange={(e) => handleChange(movie.id, e)}
+                        disabled={locked}
+                        className="min-h-[96px] w-full rounded-md border border-white/10 bg-transparent px-3 py-2 text-sm text-white placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                      />
+                    </Field>
+                  </div>
+                  <Field label="Runtime (minutes)">
+                    <Input type="number" name="runtimeMinutes" value={movie.runtimeMinutes} onChange={(e) => handleChange(movie.id, e)} disabled={locked} />
+                  </Field>
+                  <Field label="Content Rating">
+                    <select
+                      name="contentRating"
+                      value={movie.contentRating}
+                      onChange={(e) => handleChange(movie.id, e)}
+                      disabled={locked}
+                      className="flex h-10 w-full rounded-md border border-white/10 bg-black px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                    >
+                      <option value="">None</option>
+                      <option value="G">G</option>
+                      <option value="PG">PG</option>
+                      <option value="PG_13">PG-13</option>
+                      <option value="R">R</option>
+                      <option value="NC_17">NC-17</option>
+                    </select>
+                  </Field>
+                </div>
+
+                <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <UploadField label="Poster Image" folder="posters" progress={itemProgress?.posters}>
+                    <Input type="file" accept="image/*" disabled={locked} onChange={(e) => updateMovie(movie.id, 'posterFile', e.target.files?.[0] || null)} />
+                  </UploadField>
+                  <UploadField label="Backdrop Image" folder="backdrops" progress={itemProgress?.backdrops}>
+                    <Input type="file" accept="image/*" disabled={locked} onChange={(e) => updateMovie(movie.id, 'backdropFile', e.target.files?.[0] || null)} />
+                  </UploadField>
+                  <div className="md:col-span-2">
+                    <UploadField label="Video File" folder="videos" progress={itemProgress?.videos}>
+                      <Input type="file" accept="video/*" disabled={locked} onChange={(e) => updateMovie(movie.id, 'videoFile', e.target.files?.[0] || null)} />
+                      <p className="mt-1 text-xs text-white/40">Leave empty if you intend to stream externally or upload later.</p>
+                    </UploadField>
+                  </div>
+                  <Field label="Direct Video Link (Optional)">
+                    <Input name="externalVideoUrl" value={movie.externalVideoUrl} onChange={(e) => handleChange(movie.id, e)} disabled={locked} placeholder="https://example.com/video.mp4" />
+                  </Field>
+                  <Field label="Download Link (MediaFire etc.)">
+                    <Input name="downloadUrl" value={movie.downloadUrl} onChange={(e) => handleChange(movie.id, e)} disabled={locked} placeholder="https://www.mediafire.com/file/..." />
+                  </Field>
+                </div>
+
+                <div className="mt-6 border-t border-white/10 pt-5">
+                  <label className="mb-2 block text-sm font-medium text-white/70">Genres</label>
+                  <div className="flex flex-wrap gap-2">
+                    {genres.map((genre) => (
+                      <label key={genre.id} className="flex cursor-pointer items-center gap-2 rounded-full bg-white/5 px-3 py-1.5 hover:bg-white/10">
+                        <input
+                          type="checkbox"
+                          checked={movie.genreIds.includes(genre.id)}
+                          onChange={() => toggleGenre(movie.id, genre.id)}
+                          disabled={locked}
+                          className="rounded border-white/20 bg-black text-primary-500 focus:ring-primary-500"
+                        />
+                        <span className="text-sm text-white/70">{genre.name}</span>
+                      </label>
+                    ))}
+                    {genres.length === 0 && <span className="text-sm text-white/40">Loading genres...</span>}
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
+                    <ToggleLabel label="Published" checked={movie.published} disabled={locked} onChange={(checked) => updateMovie(movie.id, 'published', checked)} />
+                    <ToggleLabel label="Featured" checked={movie.featured} disabled={locked} onChange={(checked) => updateMovie(movie.id, 'featured', checked)} />
+                    <ToggleLabel label="Old Movie" checked={movie.isOldContent} disabled={locked} onChange={(checked) => updateMovie(movie.id, 'isOldContent', checked)} />
+                  </div>
+                </div>
+
+                {itemProgress?.error && (
+                  <div className="mt-5 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300">
+                    {itemProgress.error}
+                  </div>
+                )}
+              </section>
+            )
+          })}
+
+          {error && <Notice tone="danger" text={error} />}
+          {success && <Notice tone="success" text={success} />}
+
+          <div className="flex flex-col-reverse gap-3 md:flex-row md:justify-end">
             <Button type="button" variant="ghost" onClick={() => router.back()} disabled={loading}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
               {loading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...</>
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Uploading {movies.length} item{movies.length === 1 ? '' : 's'}...
+                </>
               ) : (
-                <><UploadCloud className="mr-2 h-4 w-4" /> Create Movie</>
+                <>
+                  <UploadCloud className="h-4 w-4" />
+                  Create {movies.length} item{movies.length === 1 ? '' : 's'}
+                </>
               )}
             </Button>
           </div>
         </form>
       </div>
     </main>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-white/70">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+function UploadField({
+  label,
+  progress,
+  children,
+}: {
+  label: string
+  folder: MediaFolder
+  progress?: number
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <span className="mb-1 block text-sm font-medium text-white/70">{label}</span>
+      {children}
+      {progress !== undefined && (
+        <div className="mt-2 text-sm text-primary-400">
+          Uploading: {progress}%
+          <div className="mt-1 h-1.5 w-full rounded-full bg-white/10">
+            <div className="h-1.5 rounded-full bg-primary-500 transition-all duration-300" style={{ width: `${progress}%` }} />
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ToggleLabel({
+  label,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string
+  checked: boolean
+  disabled: boolean
+  onChange: (checked: boolean) => void
+}) {
+  return (
+    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-white/10 bg-white/[0.02] px-3 py-2 text-sm text-white/70">
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        className="h-4 w-4 rounded border-white/20 bg-black text-primary-500 focus:ring-primary-500"
+      />
+      {label}
+    </label>
+  )
+}
+
+function StatusPill({
+  icon,
+  text,
+  tone = 'neutral',
+}: {
+  icon: React.ReactNode
+  text: string
+  tone?: 'neutral' | 'success' | 'danger'
+}) {
+  const colors = {
+    neutral: 'border-white/10 bg-white/10 text-white/70',
+    success: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+    danger: 'border-red-500/30 bg-red-500/10 text-red-300',
+  }
+
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${colors[tone]}`}>
+      {icon}
+      {text}
+    </span>
+  )
+}
+
+function Notice({ text, tone }: { text: string; tone: 'success' | 'danger' }) {
+  const isSuccess = tone === 'success'
+  return (
+    <div className={`flex items-center gap-3 rounded-md border px-4 py-3 text-sm ${isSuccess ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-300' : 'border-red-500/30 bg-red-500/10 text-red-300'}`}>
+      {isSuccess ? <CheckCircle2 className="h-5 w-5 shrink-0" /> : <AlertCircle className="h-5 w-5 shrink-0" />}
+      {text}
+    </div>
   )
 }

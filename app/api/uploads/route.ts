@@ -15,7 +15,9 @@ const ALLOWED_MIME_TYPES: Record<string, string[]> = {
 }
 
 export async function POST(request: NextRequest) {
-  const limited = rateLimit(request, 10)
+  // Admin batch uploads can request several presigned URLs at once
+  // (poster, backdrop, and video for up to 10 movies).
+  const limited = rateLimit(request, 60)
   if (limited) return limited
 
   const { user, response } = await requireUser()

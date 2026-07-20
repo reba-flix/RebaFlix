@@ -17,6 +17,9 @@ const config: Config = {
       screens: { '2xl': '1400px' },
     },
     extend: {
+      screens: {
+        xs: '480px',
+      },
       colors: {
         // Netflix-inspired palette
         primary: {

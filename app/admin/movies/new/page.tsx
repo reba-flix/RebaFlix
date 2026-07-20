@@ -41,6 +41,7 @@ export default function NewMoviePage() {
     contentRating: '',
     featured: false,
     published: false,
+    isOldContent: false,
     genreIds: [] as string[],
   })
 
@@ -340,6 +341,44 @@ export default function NewMoviePage() {
                 />
                 <span>Featured (Show on homepage banner)</span>
               </label>
+            </div>
+
+            {/* Old vs New Content Ordering */}
+            <div className="pt-4 border-t border-white/10">
+              <label className="block text-sm font-semibold text-white mb-3">
+                Content Order on Website
+              </label>
+              <p className="text-xs text-white/40 mb-3">
+                &ldquo;New Release&rdquo; will appear first in all listings. &ldquo;Old Movie&rdquo; will be pushed to the end — use this for archive content you are uploading that shouldn&apos;t look new.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, isOldContent: false }))}
+                  className={`flex-1 flex flex-col items-center gap-1.5 py-4 px-3 rounded-xl border-2 transition-all ${
+                    !formData.isOldContent
+                      ? 'border-[#E50914] bg-[#E50914]/10 text-white'
+                      : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20'
+                  }`}
+                >
+                  <span className="text-2xl">✨</span>
+                  <span className="text-sm font-bold">New Release</span>
+                  <span className="text-xs opacity-70">Shows first in listings</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, isOldContent: true }))}
+                  className={`flex-1 flex flex-col items-center gap-1.5 py-4 px-3 rounded-xl border-2 transition-all ${
+                    formData.isOldContent
+                      ? 'border-amber-500 bg-amber-500/10 text-white'
+                      : 'border-white/10 bg-white/[0.02] text-white/50 hover:border-white/20'
+                  }`}
+                >
+                  <span className="text-2xl">📦</span>
+                  <span className="text-sm font-bold">Old Movie</span>
+                  <span className="text-xs opacity-70">Shows last in listings</span>
+                </button>
+              </div>
             </div>
           </div>
 

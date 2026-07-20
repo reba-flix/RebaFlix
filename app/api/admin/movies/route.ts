@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
       published,
       genreIds,       // string[]
       subtitles,      // { languageId, label, url, default }[]
+      isOldContent,   // boolean — if true, movie sorts to end of catalog
     } = body
 
     if (!title || !description) {
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
           contentRating:  contentRating || null,
           featured:       Boolean(featured),
           published:      Boolean(published),
+          isOldContent:   Boolean(isOldContent),
           genres: genreIds?.length
             ? { create: genreIds.map((genreId: string) => ({ genreId })) }
             : undefined,
@@ -110,6 +112,7 @@ export async function POST(request: NextRequest) {
           contentRating:  contentRating || null,
           featured:       Boolean(featured),
           published:      Boolean(published),
+          isOldContent:   Boolean(isOldContent),
           genres: genreIds?.length
             ? { create: genreIds.map((genreId: string) => ({ genreId })) }
             : undefined,

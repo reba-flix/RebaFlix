@@ -340,14 +340,14 @@ export function Navbar() {
                 </AnimatePresence>
               </div>
             ) : (
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5">
                 <Link href="/login">
-                  <Button variant="ghost" size="sm" className="hidden sm:flex">
+                  <Button variant="ghost" size="sm" className="text-xs px-2.5 py-1.5 h-8 sm:text-sm sm:px-3 sm:h-9">
                     Sign In
                   </Button>
                 </Link>
                 <Link href="/register">
-                  <Button size="sm">
+                  <Button size="sm" className="text-xs px-2.5 py-1.5 h-8 sm:text-sm sm:px-3 sm:h-9">
                     Get Started
                   </Button>
                 </Link>

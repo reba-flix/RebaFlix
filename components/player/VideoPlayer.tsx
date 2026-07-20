@@ -153,11 +153,17 @@ export function VideoPlayer({
     return () => window.removeEventListener('keydown', handleKeydown)
   }, [])
 
-  // Fullscreen change listener
+  // Fullscreen change listener (standard + webkit for iOS)
   useEffect(() => {
-    const handler = () => setIsFullscreen(!!document.fullscreenElement)
+    const handler = () => setIsFullscreen(
+      !!document.fullscreenElement || !!(document as any).webkitFullscreenElement
+    )
     document.addEventListener('fullscreenchange', handler)
-    return () => document.removeEventListener('fullscreenchange', handler)
+    document.addEventListener('webkitfullscreenchange', handler)
+    return () => {
+      document.removeEventListener('fullscreenchange', handler)
+      document.removeEventListener('webkitfullscreenchange', handler)
+    }
   }, [])
 
   // Close volume slider on outside click
@@ -258,10 +264,24 @@ export function VideoPlayer({
   const VolumeIcon = volumeIcon
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      containerRef.current?.requestFullscreen()
+    const video = videoRef.current
+    const container = containerRef.current
+    const isFs = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement
+    if (!isFs) {
+      if (container?.requestFullscreen) {
+        container.requestFullscreen()
+      } else if ((container as any)?.webkitRequestFullscreen) {
+        ;(container as any).webkitRequestFullscreen()
+      } else if ((video as any)?.webkitEnterFullscreen) {
+        // iOS Safari fallback — enter native video fullscreen
+        ;(video as any).webkitEnterFullscreen()
+      }
     } else {
-      document.exitFullscreen()
+      if (document.exitFullscreen) {
+        document.exitFullscreen()
+      } else if ((document as any).webkitExitFullscreen) {
+        ;(document as any).webkitExitFullscreen()
+      }
     }
   }
 
@@ -415,11 +435,11 @@ export function VideoPlayer({
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/40 opacity-0 transition group-hover:opacity-100" />
 
       {/* Controls */}
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-2 p-3 opacity-0 transition group-hover:opacity-100">
+      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-2 sm:gap-2 sm:p-3 opacity-0 transition group-hover:opacity-100">
         
         {/* Progress bar */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-white/70 tabular-nums w-10 shrink-0">{formatTime(progress)}</span>
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <span className="text-[10px] sm:text-xs text-white/70 tabular-nums w-8 sm:w-10 shrink-0">{formatTime(progress)}</span>
           <input
             type="range"
             min={0}
@@ -430,33 +450,40 @@ export function VideoPlayer({
             className="flex-1 h-1 accent-[#E50914] cursor-pointer"
             style={{ background: `linear-gradient(to right, #E50914 ${duration ? (progress / duration) * 100 : 0}%, rgba(255,255,255,0.3) 0%)` }}
           />
-          <span className="text-xs text-white/70 tabular-nums w-10 shrink-0 text-right">{formatTime(duration)}</span>
+          <span className="text-[10px] sm:text-xs text-white/70 tabular-nums w-8 sm:w-10 shrink-0 text-right">{formatTime(duration)}</span>
         </div>
 
-        {/* Buttons row */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
+        {/* Buttons row — two rows on mobile, single row on desktop */}
+        <div className="flex flex-wrap items-center justify-between gap-y-1 gap-x-1">
+          {/* LEFT GROUP: Play, Replay, Next, Volume, Title */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
             {/* Play/Pause */}
-            <Button size="icon" variant="glass" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'}>
-              {playing ? <Pause className="h-5 w-5 fill-current" /> : <Play className="h-5 w-5 fill-current" />}
+            <Button size="icon" variant="glass" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'}
+              className="h-7 w-7 sm:h-9 sm:w-9">
+              {playing ? <Pause className="h-3.5 w-3.5 sm:h-5 sm:w-5 fill-current" /> : <Play className="h-3.5 w-3.5 sm:h-5 sm:w-5 fill-current" />}
             </Button>
 
             {/* Replay */}
-            <Button size="icon" variant="glass" aria-label="Replay" onClick={() => { if (videoRef.current) videoRef.current.currentTime = 0 }}>
-              <RotateCcw className="h-4 w-4" />
+            <Button size="icon" variant="glass" aria-label="Replay"
+              className="h-7 w-7 sm:h-9 sm:w-9"
+              onClick={() => { if (videoRef.current) videoRef.current.currentTime = 0 }}>
+              <RotateCcw className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
 
             {/* Next Episode */}
             {nextItem && (
-              <Button size="icon" variant="glass" aria-label={`Next: ${nextItem.title}`} onClick={goToNext}>
-                <SkipForward className="h-4 w-4" />
+              <Button size="icon" variant="glass" aria-label={`Next: ${nextItem.title}`} onClick={goToNext}
+                className="h-7 w-7 sm:h-9 sm:w-9">
+                <SkipForward className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             )}
 
             {/* Volume */}
             <div className="relative flex items-center" ref={volumeSliderRef}>
-              <Button size="icon" variant="glass" aria-label={muted ? 'Unmute' : 'Mute'} onClick={toggleMute} onMouseEnter={() => setShowVolumeSlider(true)}>
-                <VolumeIcon className="h-4 w-4" />
+              <Button size="icon" variant="glass" aria-label={muted ? 'Unmute' : 'Mute'}
+                className="h-7 w-7 sm:h-9 sm:w-9"
+                onClick={toggleMute} onMouseEnter={() => setShowVolumeSlider(true)}>
+                <VolumeIcon className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
               {showVolumeSlider && (
                 <div
@@ -478,25 +505,28 @@ export function VideoPlayer({
               )}
             </div>
 
-            {/* Title */}
-            <span className="hidden text-sm font-semibold text-white md:inline ml-1 truncate max-w-xs">{title}</span>
+            {/* Title — desktop only */}
+            <span className="hidden md:inline text-sm font-semibold text-white ml-1 truncate max-w-xs">{title}</span>
             {nextItem && (
-              <span className="hidden text-xs text-white/40 md:inline truncate max-w-[160px]">
+              <span className="hidden md:inline text-xs text-white/40 truncate max-w-[160px]">
                 Next: {nextItem.title}
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5">
+          {/* RIGHT GROUP: Speed, Subtitles, Episodes, PiP, Cast, Fullscreen */}
+          <div className="flex items-center gap-1 sm:gap-1.5">
             {/* Speed */}
-            <Button size="icon" variant="glass" onClick={changeSpeed} aria-label="Playback speed">
-              <Settings className="h-4 w-4" />
+            <Button size="icon" variant="glass" onClick={changeSpeed} aria-label="Playback speed"
+              className="h-7 w-7 sm:h-9 sm:w-9">
+              <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
-            <span className="min-w-8 text-xs font-semibold text-white">{speed}x</span>
+            <span className="text-[10px] sm:text-xs font-semibold text-white min-w-[18px] sm:min-w-[28px]">{speed}x</span>
 
             {/* Subtitles */}
-            <Button size="icon" variant="glass" aria-label="Subtitles">
-              <Captions className="h-4 w-4" />
+            <Button size="icon" variant="glass" aria-label="Subtitles"
+              className="h-7 w-7 sm:h-9 sm:w-9">
+              <Captions className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
 
             {/* Episode List (series only) */}
@@ -506,25 +536,31 @@ export function VideoPlayer({
                 variant="glass"
                 aria-label="Episode list"
                 onClick={() => setShowEpisodes(v => !v)}
-                className={showEpisodes ? 'text-[#E50914]' : ''}
+                className={`h-7 w-7 sm:h-9 sm:w-9 ${showEpisodes ? 'text-[#E50914]' : ''}`}
               >
-                <Layers className="h-4 w-4" />
+                <Layers className="h-3 w-3 sm:h-4 sm:w-4" />
               </Button>
             )}
 
-            {/* PiP */}
-            <Button size="icon" variant="glass" aria-label="Picture in picture" onClick={() => videoRef.current?.requestPictureInPicture?.()}>
-              <PictureInPicture className="h-4 w-4" />
+            {/* PiP — hidden on very small screens */}
+            <Button size="icon" variant="glass" aria-label="Picture in picture"
+              className="hidden xs:flex h-7 w-7 sm:h-9 sm:w-9"
+              onClick={() => videoRef.current?.requestPictureInPicture?.()}>
+              <PictureInPicture className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
 
-            {/* Cast */}
-            <Button size="icon" variant="glass" aria-label="Cast">
-              <MonitorUp className="h-4 w-4" />
+            {/* Cast — hidden on small screens */}
+            <Button size="icon" variant="glass" aria-label="Cast"
+              className="hidden sm:flex h-7 w-7 sm:h-9 sm:w-9">
+              <MonitorUp className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
 
             {/* Fullscreen */}
-            <Button size="icon" variant="glass" aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'} onClick={toggleFullscreen}>
-              {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+            <Button size="icon" variant="glass"
+              aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+              className="h-7 w-7 sm:h-9 sm:w-9"
+              onClick={toggleFullscreen}>
+              {isFullscreen ? <Minimize className="h-3 w-3 sm:h-4 sm:w-4" /> : <Maximize className="h-3 w-3 sm:h-4 sm:w-4" />}
             </Button>
           </div>
         </div>

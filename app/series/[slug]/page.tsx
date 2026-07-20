@@ -17,12 +17,20 @@ function toSeriesSlug(value: string) {
     .replace(/^-|-$/g, '')
 }
 
+function decodeSlug(value: string) {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
 export default async function SeriesPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const decodedSlug = decodeURIComponent(slug)
+  const decodedSlug = decodeSlug(slug)
   
   let series = await prisma.series.findUnique({
-    where: { slug },
+    where: { slug: decodedSlug },
     include: {
       genres: { include: { genre: true } },
       seasons: {
@@ -61,7 +69,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
       }
     })
 
-    if (series && series.slug !== slug) {
+    if (series && series.slug !== decodedSlug) {
       redirect(`/series/${series.slug}`)
     }
   }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { AlertCircle, CheckCircle2, Link2, Loader2, Plus, Trash2, UploadCloud } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -49,6 +49,7 @@ function createDraft(seasonNumber: number, episodeNumber: number): EpisodeDraft 
 
 export function AddEpisodeForm({ seriesId, defaultSeasonNumber = 1, defaultEpisodeNumber = 1 }: Props) {
   const router = useRouter()
+  const activeSavesRef = useRef(0)
   const [episodes, setEpisodes] = useState<EpisodeDraft[]>([
     createDraft(defaultSeasonNumber, defaultEpisodeNumber),
   ])
@@ -130,6 +131,7 @@ export function AddEpisodeForm({ seriesId, defaultSeasonNumber = 1, defaultEpiso
     const episode = episodes.find((item) => item.id === episodeId)
     if (!episode) return
 
+    activeSavesRef.current += 1
     patchEpisode(episodeId, { state: 'uploading', error: null, progress: episode.videoTab === 'file' ? 0 : null })
 
     try {
@@ -155,13 +157,17 @@ export function AddEpisodeForm({ seriesId, defaultSeasonNumber = 1, defaultEpiso
       if (!res.ok) throw new Error(data.error || 'Failed to save episode.')
 
       patchEpisode(episodeId, { state: 'done', error: null })
-      router.refresh()
     } catch (err: any) {
       patchEpisode(episodeId, {
         state: 'error',
         error: err?.message || 'Failed to save episode.',
         progress: episode.videoTab === 'file' ? episode.progress : null,
       })
+    } finally {
+      activeSavesRef.current = Math.max(0, activeSavesRef.current - 1)
+      if (activeSavesRef.current === 0) {
+        router.refresh()
+      }
     }
   }
 

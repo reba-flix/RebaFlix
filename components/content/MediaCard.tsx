@@ -104,7 +104,7 @@ export function MediaCard({
 
   return (
     <div className={cn(
-      'group relative shrink-0 overflow-hidden rounded-xl bg-[#1a1a1a] transition duration-300 hover:z-10 hover:scale-[1.04] hover:shadow-2xl hover:shadow-black/60',
+      'group relative shrink-0 overflow-hidden rounded-lg border border-white/10 bg-[#151515] shadow-lg shadow-black/30 transition duration-300 hover:z-10 hover:scale-[1.035] hover:border-white/20 hover:shadow-2xl hover:shadow-black/70',
       compact ? 'w-44' : 'w-52 md:w-60'
     )}>
       <div className="relative aspect-[2/3] block">
@@ -119,7 +119,7 @@ export function MediaCard({
         )}
 
         {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent opacity-90 pointer-events-none" />
         <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
 
         {/* ── TOP badges (genre + season) ── */}
@@ -184,8 +184,8 @@ export function MediaCard({
 
         {/* ── EPISODE COUNT BADGE (always visible, bottom-left) ── */}
         {isSeason && episodeCount !== undefined && episodeCount > 0 && (
-          <div className="absolute bottom-[4.5rem] left-3 z-10 pointer-events-none">
-            <span className="inline-flex items-center gap-1 bg-black/75 backdrop-blur-sm text-white text-[11px] font-bold px-2 py-1 rounded-md shadow-lg border border-white/10">
+          <div className="absolute bottom-[4.75rem] left-1/2 z-10 -translate-x-1/2 pointer-events-none">
+            <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-[#E50914] px-3 py-1.5 text-[11px] font-black text-white shadow-lg shadow-black/50">
               <Film className="h-3 w-3 flex-shrink-0" />
               {episodeCount} {episodeCount === 1 ? 'Episode' : 'Episodes'}
             </span>

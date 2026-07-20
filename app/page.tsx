@@ -33,17 +33,17 @@ export default async function HomePage() {
   const trending = catalog?.trending.length ? catalog.trending : fallbackItems(fallbackRows.trending)
   const popular = catalog?.popular.length ? catalog.popular : fallbackItems(fallbackRows.popular)
   const rawNewReleases = catalog?.newReleases.length ? catalog.newReleases : fallbackItems(fallbackRows.newReleases)
-  const rawSeries = catalog?.series.length ? catalog.series : []
+  const rawSeries = catalog?.newSeries.length ? catalog.newSeries : []
   
   // Tag them with their respective item types so the card routes correctly
   const taggedNewReleases = rawNewReleases.map(item => ({ ...item, itemType: 'movie' as const }))
   const taggedSeries = rawSeries.map(item => ({ ...item, itemType: 'series' as const }))
   
-  // Combine, interleave, or sort them (here we just concat and sort by created/release date)
+  // New Releases should reflect upload order and skip content marked old by admins.
   const mixedNewReleases = [...taggedNewReleases, ...taggedSeries].sort((a, b) => {
     const getMs = (item: any) => {
-      if (item.releaseDate) return new Date(item.releaseDate).getTime()
       if (item.createdAt) return new Date(item.createdAt).getTime()
+      if (item.releaseDate) return new Date(item.releaseDate).getTime()
       return 0
     }
     return getMs(b) - getMs(a)

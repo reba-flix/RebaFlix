@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 
 export async function getHomeCatalog() {
-  const [hero, trending, popular, newReleases, topRated, series, kids, action, comedy, drama, horror, anime] =
+  const [hero, trending, popular, newReleases, newSeries, topRated, series, kids, action, comedy, drama, horror, anime] =
     await Promise.all([
       prisma.movie.findFirst({
         where: { published: true, featured: true },
@@ -21,10 +21,21 @@ export async function getHomeCatalog() {
         include: { genres: { include: { genre: true } } },
       }),
       prisma.movie.findMany({
-        where: { published: true },
-        orderBy: [{ isOldContent: 'asc' }, { releaseDate: 'desc' }],
-        take: 18,
+        where: { published: true, isOldContent: false },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
         include: { genres: { include: { genre: true } } },
+      }),
+      prisma.series.findMany({
+        where: { published: true, isOldContent: false },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
+        include: {
+          genres: { include: { genre: true } },
+          seasons: {
+            include: { _count: { select: { episodes: true } } },
+          },
+        },
       }),
       prisma.movie.findMany({
         where: { published: true },
@@ -69,7 +80,7 @@ export async function getHomeCatalog() {
       }),
     ])
 
-  return { hero, trending, popular, newReleases, topRated, series, kids, action, comedy, drama, horror, anime }
+  return { hero, trending, popular, newReleases, newSeries, topRated, series, kids, action, comedy, drama, horror, anime }
 }
 
 export const demoPosters = [

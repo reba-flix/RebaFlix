@@ -22,6 +22,7 @@ type RowItem = {
   _count?: { seasons?: number }
   episodeCount?: number
   releaseDate?: string | Date | null
+  createdAt?: string | Date | null
 }
 
 type ContentRowProps = {

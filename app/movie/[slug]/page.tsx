@@ -96,9 +96,9 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
 
             <WatchLaterButton movieId={movie.id} />
 
-            {movie.downloadUrl ? (
+            {movie.downloadUrl || movie.videoUrl ? (
               <Button asChild size="lg" variant="default" className="bg-primary-600 hover:bg-primary-700">
-                <a href={movie.downloadUrl} target="_blank" rel="noopener noreferrer">
+                <a href={`/api/movies/${movie.id}/download`} target="_blank" rel="noopener noreferrer">
                   <Download className="mr-2 h-5 w-5" />
                   Download
                 </a>

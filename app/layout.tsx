@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter, Outfit, Archivo_Black } from 'next/font/google'
 import { Navbar } from '@/components/layout/Navbar'
-import { Footer } from '@/components/layout/Footer'
-import { SupportChatWrapper } from '@/components/layout/SupportChatWrapper'
+import { RootChrome } from '@/components/layout/RootChrome'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
@@ -50,8 +49,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <main className="flex-grow">
           {children}
         </main>
-        <Footer />
-        <SupportChatWrapper />
+        <RootChrome />
         <Toaster />
       </body>
     </html>

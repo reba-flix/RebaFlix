@@ -3,6 +3,7 @@ import { getSessionUser, hasRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { Eye, TrendingUp, Film, Tv, Trophy } from 'lucide-react'
 import Image from 'next/image'
+import { MoviePlaysChart } from '@/components/admin/MoviePlaysChart'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +35,12 @@ export default async function AnalyticsPage() {
 
   const topMovie = movies[0]
   const topSeries = series[0]
+  const chartData = [
+    ...movies.slice(0, 6).map((movie) => ({ title: movie.title, plays: movie.viewCount })),
+    ...series.slice(0, 6).map((seriesItem) => ({ title: seriesItem.title, plays: seriesItem.viewCount })),
+  ]
+    .sort((a, b) => b.plays - a.plays)
+    .slice(0, 10)
 
   return (
     <main className="w-full">
@@ -102,6 +109,27 @@ export default async function AnalyticsPage() {
             <p className="text-white/50">No series found.</p>
           )}
         </div>
+      </div>
+
+      {/* Top Content Bar Chart */}
+      <div className="mb-10 rounded-xl border border-white/5 bg-white/[0.02] p-6">
+        <div className="mb-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="font-semibold text-white">Top Views Bar Chart</h2>
+            <p className="text-sm text-white/40">Highest viewed movies and series ranked together.</p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-white/40">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#E50914]" />
+            Views
+          </div>
+        </div>
+        {chartData.length > 0 ? (
+          <MoviePlaysChart data={chartData} />
+        ) : (
+          <div className="flex h-[280px] items-center justify-center rounded-lg border border-dashed border-white/10 text-sm text-white/40">
+            No analytics data available yet.
+          </div>
+        )}
       </div>
 
       {/* Detailed Lists */}

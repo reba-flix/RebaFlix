@@ -1,9 +1,9 @@
 'use client'
 
-import { useActionState, useState, useRef } from 'react'
-import { Plus, Link2, UploadCloud, CheckCircle2, Loader2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { AlertCircle, CheckCircle2, Link2, Loader2, Plus, Trash2, UploadCloud } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { addEpisodeToSeries } from './actions'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -13,256 +13,362 @@ type Props = {
 }
 
 type UploadTab = 'url' | 'file'
+type EpisodeState = 'idle' | 'uploading' | 'saving' | 'done' | 'error'
 
-export function AddEpisodeForm({ seriesId, defaultSeasonNumber = 1, defaultEpisodeNumber }: Props) {
-  const [state, formAction, isPending] = useActionState(addEpisodeToSeries, null)
+type EpisodeDraft = {
+  id: string
+  seasonNumber: string
+  episodeNumber: string
+  title: string
+  videoTab: UploadTab
+  videoUrlInput: string
+  videoFile: File | null
+  uploadedVideoUrl: string
+  progress: number | null
+  state: EpisodeState
+  error: string | null
+}
 
-  // Video source toggle
-  const [videoTab, setVideoTab] = useState<UploadTab>('url')
-  const [videoUrlInput, setVideoUrlInput] = useState('')
-  const [uploadedVideoUrl, setUploadedVideoUrl] = useState('')
+const MAX_EPISODES = 10
 
-  // Upload state
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
-  const [uploadError, setUploadError] = useState<string | null>(null)
-  const [uploadDone, setUploadDone] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+function createDraft(seasonNumber: number, episodeNumber: number): EpisodeDraft {
+  return {
+    id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    seasonNumber: String(seasonNumber),
+    episodeNumber: String(episodeNumber),
+    title: '',
+    videoTab: 'url',
+    videoUrlInput: '',
+    videoFile: null,
+    uploadedVideoUrl: '',
+    progress: null,
+    state: 'idle',
+    error: null,
+  }
+}
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+export function AddEpisodeForm({ seriesId, defaultSeasonNumber = 1, defaultEpisodeNumber = 1 }: Props) {
+  const router = useRouter()
+  const [episodes, setEpisodes] = useState<EpisodeDraft[]>([
+    createDraft(defaultSeasonNumber, defaultEpisodeNumber),
+  ])
 
-    setUploadError(null)
-    setUploadDone(false)
-    setUploadProgress(0)
-    setUploadedVideoUrl('')
+  const uploadingCount = useMemo(
+    () => episodes.filter((episode) => episode.state === 'uploading' || episode.state === 'saving').length,
+    [episodes]
+  )
+
+  const updateEpisode = <K extends keyof EpisodeDraft>(id: string, key: K, value: EpisodeDraft[K]) => {
+    setEpisodes((current) =>
+      current.map((episode) =>
+        episode.id === id ? { ...episode, [key]: value, state: episode.state === 'done' ? 'idle' : episode.state } : episode
+      )
+    )
+  }
+
+  const patchEpisode = (id: string, patch: Partial<EpisodeDraft>) => {
+    setEpisodes((current) => current.map((episode) => (episode.id === id ? { ...episode, ...patch } : episode)))
+  }
+
+  const addEpisode = () => {
+    if (episodes.length >= MAX_EPISODES) return
+
+    const highestEpisode = episodes.reduce((max, episode) => {
+      const value = Number(episode.episodeNumber)
+      return Number.isFinite(value) ? Math.max(max, value) : max
+    }, defaultEpisodeNumber - 1)
+
+    setEpisodes((current) => [...current, createDraft(defaultSeasonNumber, highestEpisode + 1)])
+  }
+
+  const removeEpisode = (id: string) => {
+    setEpisodes((current) => (current.length === 1 ? current : current.filter((episode) => episode.id !== id)))
+  }
+
+  const uploadVideo = async (episode: EpisodeDraft) => {
+    if (!episode.videoFile) throw new Error('Choose a video file first.')
+
+    const res = await fetch('/api/uploads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filename: episode.videoFile.name,
+        contentType: episode.videoFile.type,
+        folder: 'videos',
+      }),
+    })
+
+    const data = await res.json()
+    if (!res.ok) throw new Error(data.error || 'Failed to prepare video upload.')
+
+    return new Promise<string>((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open('PUT', data.uploadUrl)
+      xhr.setRequestHeader('Content-Type', episode.videoFile?.type || 'application/octet-stream')
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          patchEpisode(episode.id, { progress: Math.round((event.loaded / event.total) * 100) })
+        }
+      }
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          patchEpisode(episode.id, { progress: 100, uploadedVideoUrl: data.url })
+          resolve(data.url)
+        } else {
+          reject(new Error(`Upload failed (${xhr.status}).`))
+        }
+      }
+
+      xhr.onerror = () => reject(new Error('Network error during upload.'))
+      xhr.send(episode.videoFile)
+    })
+  }
+
+  const saveEpisode = async (episodeId: string) => {
+    const episode = episodes.find((item) => item.id === episodeId)
+    if (!episode) return
+
+    patchEpisode(episodeId, { state: 'uploading', error: null, progress: episode.videoTab === 'file' ? 0 : null })
 
     try {
-      // 1. Get presigned URL
-      const res = await fetch('/api/uploads', {
+      const videoUrl =
+        episode.videoTab === 'file'
+          ? episode.uploadedVideoUrl || await uploadVideo(episode)
+          : episode.videoUrlInput.trim()
+
+      patchEpisode(episodeId, { state: 'saving' })
+
+      const res = await fetch(`/api/admin/series/${seriesId}/episodes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filename: file.name,
-          contentType: file.type,
-          folder: 'videos',
+          seasonNumber: Number(episode.seasonNumber),
+          episodeNumber: Number(episode.episodeNumber),
+          title: episode.title.trim(),
+          videoUrl,
         }),
       })
 
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || 'Failed to get upload URL')
-      }
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed to save episode.')
 
-      const { uploadUrl, url } = await res.json()
-
-      // 2. Upload file to R2 via XHR for progress tracking
-      await new Promise<void>((resolve, reject) => {
-        const xhr = new XMLHttpRequest()
-        xhr.open('PUT', uploadUrl)
-        xhr.setRequestHeader('Content-Type', file.type)
-
-        xhr.upload.onprogress = (event) => {
-          if (event.lengthComputable) {
-            setUploadProgress(Math.round((event.loaded / event.total) * 100))
-          }
-        }
-
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            setUploadProgress(100)
-            setUploadedVideoUrl(url)
-            setUploadDone(true)
-            resolve()
-          } else {
-            reject(new Error(`Upload failed (Status: ${xhr.status})`))
-          }
-        }
-
-        xhr.onerror = () => reject(new Error('Network error during upload'))
-        xhr.send(file)
-      })
+      patchEpisode(episodeId, { state: 'done', error: null })
+      router.refresh()
     } catch (err: any) {
-      setUploadError(err.message || 'Upload failed')
-      setUploadProgress(null)
+      patchEpisode(episodeId, {
+        state: 'error',
+        error: err?.message || 'Failed to save episode.',
+        progress: episode.videoTab === 'file' ? episode.progress : null,
+      })
     }
   }
 
-  // Determine which videoUrl value to pass to the hidden input
-  const resolvedVideoUrl = videoTab === 'file' ? uploadedVideoUrl : videoUrlInput
+  const saveAll = () => {
+    episodes
+      .filter((episode) => episode.state !== 'uploading' && episode.state !== 'saving')
+      .forEach((episode) => void saveEpisode(episode.id))
+  }
 
   return (
-    <div className="bg-[#1a1a1a] rounded-xl border border-white/10 p-6 sticky top-24">
-      <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-        <Plus className="w-5 h-5 text-[#E50914]" />
-        Add / Update Episode
-      </h2>
-
-      {state?.error && (
-        <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-400">
-          ⚠️ {state.error}
-        </div>
-      )}
-
-      <form action={formAction} className="flex flex-col gap-4">
-        <input type="hidden" name="seriesId" value={seriesId} />
-        {/* Pass the resolved video URL as the form field */}
-        <input type="hidden" name="videoUrl" value={resolvedVideoUrl} />
-
+    <div className="rounded-xl border border-white/10 bg-[#1a1a1a] p-5">
+      <div className="mb-5 flex items-start justify-between gap-3">
         <div>
-          <label className="block text-xs font-medium text-white/60 mb-1.5 uppercase tracking-wider">
-            Season Number
-          </label>
-          <input
-            type="number"
-            name="seasonNumber"
-            required
-            min="1"
-            defaultValue={defaultSeasonNumber}
-            className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-[#E50914] focus:ring-1 focus:ring-[#E50914]"
-          />
+          <h2 className="flex items-center gap-2 text-lg font-bold text-white">
+            <Plus className="h-5 w-5 text-[#E50914]" />
+            Add Episodes
+          </h2>
+          <p className="mt-1 text-xs text-white/40">
+            Queue up to {MAX_EPISODES} episodes. {uploadingCount > 0 ? `${uploadingCount} uploading or saving.` : 'Ready to upload.'}
+          </p>
         </div>
-
-        <div>
-          <label className="block text-xs font-medium text-white/60 mb-1.5 uppercase tracking-wider">
-            Episode Number
-          </label>
-          <input
-            type="number"
-            name="episodeNumber"
-            required
-            min="1"
-            defaultValue={defaultEpisodeNumber}
-            className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-[#E50914] focus:ring-1 focus:ring-[#E50914]"
-          />
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-white/60 mb-1.5 uppercase tracking-wider">
-            Episode Title
-          </label>
-          <input
-            type="text"
-            name="title"
-            required
-            placeholder="e.g. The Beginning"
-            className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-[#E50914] focus:ring-1 focus:ring-[#E50914]"
-          />
-        </div>
-
-        {/* Video Source Toggle */}
-        <div>
-          <label className="block text-xs font-medium text-white/60 mb-1.5 uppercase tracking-wider">
-            Video Source
-          </label>
-
-          {/* Tab buttons */}
-          <div className="flex rounded-lg border border-white/10 overflow-hidden mb-3">
-            <button
-              type="button"
-              onClick={() => setVideoTab('url')}
-              className={cn(
-                'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors',
-                videoTab === 'url'
-                  ? 'bg-[#E50914] text-white'
-                  : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
-              )}
-            >
-              <Link2 className="w-3.5 h-3.5" />
-              Enter URL
-            </button>
-            <button
-              type="button"
-              onClick={() => setVideoTab('file')}
-              className={cn(
-                'flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors',
-                videoTab === 'file'
-                  ? 'bg-[#E50914] text-white'
-                  : 'bg-white/5 text-white/50 hover:text-white hover:bg-white/10'
-              )}
-            >
-              <UploadCloud className="w-3.5 h-3.5" />
-              Upload File
-            </button>
-          </div>
-
-          {/* URL input */}
-          {videoTab === 'url' && (
-            <input
-              type="url"
-              placeholder="https://..."
-              value={videoUrlInput}
-              onChange={(e) => setVideoUrlInput(e.target.value)}
-              className="w-full bg-white/5 border border-white/10 rounded-md px-3 py-2 text-white text-sm focus:outline-none focus:border-[#E50914] focus:ring-1 focus:ring-[#E50914]"
-            />
-          )}
-
-          {/* File upload input */}
-          {videoTab === 'file' && (
-            <div>
-              <label
-                htmlFor="episode-video-file"
-                className={cn(
-                  'flex flex-col items-center justify-center w-full rounded-lg border-2 border-dashed px-4 py-6 cursor-pointer transition-colors',
-                  uploadDone
-                    ? 'border-emerald-500/40 bg-emerald-500/5'
-                    : 'border-white/10 bg-white/5 hover:border-white/25 hover:bg-white/10'
-                )}
-              >
-                {uploadDone ? (
-                  <div className="flex flex-col items-center gap-1 text-center">
-                    <CheckCircle2 className="w-7 h-7 text-emerald-400" />
-                    <span className="text-xs text-emerald-400 font-medium mt-1">Uploaded!</span>
-                    <span className="text-[10px] text-white/40 break-all max-w-full line-clamp-2">{uploadedVideoUrl}</span>
-                    <span className="text-[10px] text-white/40 mt-1">Click to replace</span>
-                  </div>
-                ) : uploadProgress !== null ? (
-                  <div className="flex flex-col items-center gap-2 w-full">
-                    <Loader2 className="w-6 h-6 text-[#E50914] animate-spin" />
-                    <span className="text-xs text-white/60">Uploading... {uploadProgress}%</span>
-                    <div className="w-full bg-white/10 rounded-full h-1.5 mt-1">
-                      <div
-                        className="bg-[#E50914] h-1.5 rounded-full transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center gap-1 text-center">
-                    <UploadCloud className="w-7 h-7 text-white/30" />
-                    <span className="text-xs text-white/50 mt-1">Click to browse video file</span>
-                    <span className="text-[10px] text-white/30">MP4, WebM, MKV supported</span>
-                  </div>
-                )}
-                <input
-                  id="episode-video-file"
-                  ref={fileInputRef}
-                  type="file"
-                  accept="video/mp4,video/webm,video/quicktime,video/x-matroska"
-                  className="hidden"
-                  onChange={handleFileChange}
-                  disabled={uploadProgress !== null && !uploadDone}
-                />
-              </label>
-
-              {uploadError && (
-                <p className="text-xs text-red-400 mt-2">⚠️ {uploadError}</p>
-              )}
-            </div>
-          )}
-        </div>
-
-        <Button
-          type="submit"
-          disabled={isPending || (videoTab === 'file' && !uploadDone && uploadedVideoUrl === '') || (videoTab === 'url' && !videoUrlInput)}
-          className="w-full bg-[#E50914] hover:bg-[#b80710] text-white mt-2 disabled:opacity-60"
-        >
-          {isPending ? 'Saving…' : 'Add / Update Episode'}
+        <Button type="button" size="icon-sm" variant="ghost" onClick={addEpisode} disabled={episodes.length >= MAX_EPISODES} aria-label="Add episode">
+          <Plus className="h-4 w-4" />
         </Button>
-        <p className="text-xs text-white/30 text-center">
-          If the episode number already exists, it will be updated.
-        </p>
-      </form>
+      </div>
+
+      <div className="space-y-4">
+        {episodes.map((episode, index) => {
+          const busy = episode.state === 'uploading' || episode.state === 'saving'
+          const hasVideo = episode.videoTab === 'file' ? Boolean(episode.videoFile || episode.uploadedVideoUrl) : Boolean(episode.videoUrlInput.trim())
+          const canSave = !busy && Boolean(episode.title.trim()) && hasVideo
+
+          return (
+            <div key={episode.id} className="rounded-lg border border-white/10 bg-black/20 p-4">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-white">Episode {index + 1}</h3>
+                  {episode.state === 'done' && <p className="mt-0.5 text-xs text-emerald-400">Saved successfully</p>}
+                  {episode.state === 'error' && <p className="mt-0.5 text-xs text-red-400">{episode.error}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  {busy && <Loader2 className="h-4 w-4 animate-spin text-[#E50914]" />}
+                  {episode.state === 'done' && <CheckCircle2 className="h-4 w-4 text-emerald-400" />}
+                  {episode.state === 'error' && <AlertCircle className="h-4 w-4 text-red-400" />}
+                  <Button
+                    type="button"
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={() => removeEpisode(episode.id)}
+                    disabled={busy || episodes.length === 1}
+                    aria-label="Remove episode"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Season">
+                  <input
+                    type="number"
+                    min="1"
+                    value={episode.seasonNumber}
+                    onChange={(e) => updateEpisode(episode.id, 'seasonNumber', e.target.value)}
+                    disabled={busy}
+                    className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#E50914]"
+                  />
+                </Field>
+                <Field label="Episode">
+                  <input
+                    type="number"
+                    min="1"
+                    value={episode.episodeNumber}
+                    onChange={(e) => updateEpisode(episode.id, 'episodeNumber', e.target.value)}
+                    disabled={busy}
+                    className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-[#E50914]"
+                  />
+                </Field>
+                <div className="col-span-2">
+                  <Field label="Title">
+                    <input
+                      type="text"
+                      value={episode.title}
+                      onChange={(e) => updateEpisode(episode.id, 'title', e.target.value)}
+                      disabled={busy}
+                      placeholder="e.g. The Beginning"
+                      className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-[#E50914]"
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">Video Source</span>
+                <div className="mb-3 flex overflow-hidden rounded-lg border border-white/10">
+                  <SourceButton active={episode.videoTab === 'url'} disabled={busy} onClick={() => updateEpisode(episode.id, 'videoTab', 'url')}>
+                    <Link2 className="h-3.5 w-3.5" />
+                    URL
+                  </SourceButton>
+                  <SourceButton active={episode.videoTab === 'file'} disabled={busy} onClick={() => updateEpisode(episode.id, 'videoTab', 'file')}>
+                    <UploadCloud className="h-3.5 w-3.5" />
+                    File
+                  </SourceButton>
+                </div>
+
+                {episode.videoTab === 'url' ? (
+                  <input
+                    type="url"
+                    value={episode.videoUrlInput}
+                    onChange={(e) => updateEpisode(episode.id, 'videoUrlInput', e.target.value)}
+                    disabled={busy}
+                    placeholder="https://..."
+                    className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-[#E50914]"
+                  />
+                ) : (
+                  <div>
+                    <label className="block cursor-pointer rounded-lg border border-dashed border-white/15 bg-white/5 px-4 py-5 text-center hover:border-white/30">
+                      <UploadCloud className="mx-auto mb-2 h-6 w-6 text-white/30" />
+                      <span className="block text-xs font-medium text-white/60">
+                        {episode.videoFile?.name || episode.uploadedVideoUrl || 'Choose video file'}
+                      </span>
+                      <span className="mt-1 block text-[10px] text-white/30">MP4, WebM, MOV, MKV</span>
+                      <input
+                        type="file"
+                        accept="video/mp4,video/webm,video/quicktime,video/x-matroska"
+                        disabled={busy}
+                        className="hidden"
+                        onChange={(e) => {
+                          updateEpisode(episode.id, 'videoFile', e.target.files?.[0] || null)
+                          patchEpisode(episode.id, { uploadedVideoUrl: '', progress: null, error: null })
+                        }}
+                      />
+                    </label>
+
+                    {episode.progress !== null && (
+                      <div className="mt-3">
+                        <div className="mb-1 flex items-center justify-between text-xs text-white/50">
+                          <span>Video upload</span>
+                          <span>{episode.progress}%</span>
+                        </div>
+                        <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+                          <div className="h-full rounded-full bg-[#E50914] transition-all" style={{ width: `${episode.progress}%` }} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <Button
+                type="button"
+                onClick={() => void saveEpisode(episode.id)}
+                disabled={!canSave}
+                className="mt-4 w-full bg-[#E50914] text-white hover:bg-[#b80710]"
+              >
+                {episode.state === 'uploading' ? `Uploading ${episode.progress ?? 0}%` : episode.state === 'saving' ? 'Saving...' : 'Save Episode'}
+              </Button>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="mt-4 grid grid-cols-1 gap-3">
+        <Button type="button" variant="outline" onClick={addEpisode} disabled={episodes.length >= MAX_EPISODES}>
+          <Plus className="h-4 w-4" />
+          Add another episode
+        </Button>
+        <Button type="button" variant="secondary" onClick={saveAll}>
+          <UploadCloud className="h-4 w-4" />
+          Save all ready episodes
+        </Button>
+      </div>
     </div>
+  )
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-xs font-medium uppercase tracking-wider text-white/60">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+function SourceButton({
+  active,
+  disabled,
+  onClick,
+  children,
+}: {
+  active: boolean
+  disabled: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        'flex flex-1 items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-60',
+        active ? 'bg-[#E50914] text-white' : 'bg-white/5 text-white/50 hover:bg-white/10 hover:text-white'
+      )}
+    >
+      {children}
+    </button>
   )
 }

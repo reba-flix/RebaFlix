@@ -28,7 +28,10 @@ export default async function WatchPage({
   // Try fetching as movie first
   const movie = await prisma.movie.findUnique({
     where: { id },
-    include: { subtitles: { include: { language: true } } },
+    include: {
+      subtitles: { include: { language: true } },
+      parts: { where: { published: true }, orderBy: { number: 'asc' } },
+    },
   })
 
   if (movie) {
@@ -38,14 +41,39 @@ export default async function WatchPage({
     mediaSubtitles = movie.subtitles
     mediaContentType = 'movie'
 
-    // Fetch next movie (most recent published movie that's not this one)
     if (!query.trailer) {
-      const nextMovie = await prisma.movie.findFirst({
-        where: { published: true, id: { not: movie.id } },
-        orderBy: { createdAt: 'desc' },
-      })
-      if (nextMovie) {
-        nextItem = { id: nextMovie.id, title: nextMovie.title }
+      if (movie.parts.length > 0) {
+        currentEpisodeId = movie.id
+        seasons = [{
+          id: `movie-parts-${movie.id}`,
+          number: 1,
+          title: 'Parts',
+          episodes: [
+            {
+              id: movie.id,
+              number: 1,
+              title: 'Part A',
+              thumbnailUrl: movie.backdropUrl,
+              runtimeMinutes: movie.runtimeMinutes,
+            },
+            ...movie.parts.map((part, index) => ({
+              id: part.id,
+              number: index + 2,
+              title: `Part ${String.fromCharCode(66 + index)}`,
+              thumbnailUrl: movie.backdropUrl,
+              runtimeMinutes: part.runtimeMinutes,
+            })),
+          ],
+        }]
+        nextItem = { id: movie.parts[0].id, title: 'Part B' }
+      } else {
+        const nextMovie = await prisma.movie.findFirst({
+          where: { published: true, id: { not: movie.id } },
+          orderBy: { createdAt: 'desc' },
+        })
+        if (nextMovie) {
+          nextItem = { id: nextMovie.id, title: nextMovie.title }
+        }
       }
     }
   } else {
@@ -55,25 +83,48 @@ export default async function WatchPage({
     })
 
     if (moviePart && moviePart.published && moviePart.movie.published) {
-      mediaTitle = `${moviePart.movie.title} - Part ${moviePart.number}: ${moviePart.title}`
+      const movieParts = await prisma.moviePart.findMany({
+        where: {
+          movieId: moviePart.movieId,
+          published: true,
+        },
+        orderBy: { number: 'asc' },
+      })
+      const playlist = [
+        {
+          id: moviePart.movie.id,
+          number: 1,
+          title: 'Part A',
+          thumbnailUrl: moviePart.movie.backdropUrl,
+          runtimeMinutes: moviePart.movie.runtimeMinutes,
+        },
+        ...movieParts.map((part, index) => ({
+          id: part.id,
+          number: index + 2,
+          title: `Part ${String.fromCharCode(66 + index)}`,
+          thumbnailUrl: moviePart.movie.backdropUrl,
+          runtimeMinutes: part.runtimeMinutes,
+        })),
+      ]
+      const currentIndex = playlist.findIndex((item) => item.id === moviePart.id)
+      const currentPartLabel = currentIndex >= 0 ? playlist[currentIndex].title : `Part ${moviePart.number}`
+
+      mediaTitle = `${moviePart.movie.title} - ${currentPartLabel}`
       mediaPoster = moviePart.movie.backdropUrl
       src = moviePart.videoUrl
       mediaSubtitles = moviePart.movie.subtitles
       mediaId = moviePart.movieId
       mediaContentType = 'movie'
+      currentEpisodeId = moviePart.id
+      seasons = [{
+        id: `movie-parts-${moviePart.movieId}`,
+        number: 1,
+        title: 'Parts',
+        episodes: playlist,
+      }]
 
-      const nextPart = await prisma.moviePart.findFirst({
-        where: {
-          movieId: moviePart.movieId,
-          published: true,
-          number: { gt: moviePart.number },
-        },
-        orderBy: { number: 'asc' },
-      })
-
-      if (nextPart) {
-        nextItem = { id: nextPart.id, title: `Part ${nextPart.number}: ${nextPart.title}` }
-      }
+      const nextPart = playlist[currentIndex + 1]
+      if (nextPart) nextItem = { id: nextPart.id, title: nextPart.title }
     } else {
     // Try as episode
     const episode = await prisma.episode.findUnique({

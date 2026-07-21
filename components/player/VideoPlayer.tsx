@@ -93,6 +93,7 @@ export function VideoPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false)
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const hasCounted = useRef(false)
+  const playlistLabel = contentType === 'movie' ? 'Parts' : 'Episodes'
 
   const recordPlay = useCallback(() => {
     if (!contentId || hasCounted.current) return
@@ -125,6 +126,10 @@ export function VideoPlayer({
     }
     video.src = src
   }, [src])
+
+  useEffect(() => {
+    setActiveSeason(seasons?.[0]?.id ?? '')
+  }, [seasons])
 
   // Sync volume/mute to video element
   useEffect(() => {
@@ -335,11 +340,11 @@ export function VideoPlayer({
         </div>
       )}
 
-      {/* Episode List Panel */}
+      {/* Episode / Parts List Panel */}
       {showEpisodes && seasons && seasons.length > 0 && (
         <div className="absolute inset-y-0 right-0 z-30 w-72 bg-[#141414]/97 backdrop-blur-sm flex flex-col pointer-events-auto border-l border-white/10">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-            <h3 className="text-white font-bold text-sm">Episodes</h3>
+            <h3 className="text-white font-bold text-sm">{playlistLabel}</h3>
             <button onClick={() => setShowEpisodes(false)} className="text-white/60 hover:text-white transition-colors">
               <X className="w-4 h-4" />
             </button>
@@ -529,12 +534,12 @@ export function VideoPlayer({
               <Captions className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
 
-            {/* Episode List (series only) */}
+            {/* Episode / Parts List */}
             {seasons && seasons.length > 0 && (
               <Button
                 size="icon"
                 variant="glass"
-                aria-label="Episode list"
+                aria-label={`${playlistLabel} list`}
                 onClick={() => setShowEpisodes(v => !v)}
                 className={`h-7 w-7 sm:h-9 sm:w-9 ${showEpisodes ? 'text-[#E50914]' : ''}`}
               >

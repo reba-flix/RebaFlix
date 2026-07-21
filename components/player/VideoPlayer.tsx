@@ -342,8 +342,8 @@ export function VideoPlayer({
 
       {/* Episode / Parts List Panel */}
       {showEpisodes && seasons && seasons.length > 0 && (
-        <div className="absolute inset-y-2 right-2 z-30 flex max-h-[calc(100%-1rem)] w-[min(22rem,calc(100%-1rem))] flex-col overflow-hidden rounded-lg border border-white/10 bg-[#141414]/95 shadow-2xl shadow-black/60 backdrop-blur-md pointer-events-auto sm:inset-y-4 sm:right-4 sm:max-h-[calc(100%-2rem)]">
-          <div className="flex shrink-0 items-center justify-between px-3 py-2.5 border-b border-white/10">
+        <div className="absolute inset-y-2 right-2 z-30 flex max-h-[calc(100%-1rem)] w-[min(22rem,calc(100%-1rem))] flex-col overflow-hidden rounded-xl border border-white/15 bg-[#141414]/70 shadow-2xl shadow-black/60 backdrop-blur-sm pointer-events-auto sm:inset-y-4 sm:right-4 sm:max-h-[calc(100%-2rem)]">
+          <div className="flex shrink-0 items-center justify-between border-b border-white/10 bg-black/20 px-3 py-2.5">
             <h3 className="text-white font-bold text-sm">{playlistLabel}</h3>
             <button onClick={() => setShowEpisodes(false)} className="rounded-md p-1 text-white/60 transition-colors hover:bg-white/10 hover:text-white" aria-label={`Close ${playlistLabel.toLowerCase()} list`}>
               <X className="w-4 h-4" />
@@ -379,8 +379,8 @@ export function VideoPlayer({
                 className={cn(
                   'w-full text-left px-3 py-2.5 border-b border-white/[0.06] transition-colors flex items-center gap-3',
                   ep.id === currentEpisodeId
-                    ? 'bg-[#E50914]/15 border-l-2 border-l-[#E50914]'
-                    : 'hover:bg-white/5'
+                    ? 'bg-[#E50914]/25 border-l-2 border-l-[#E50914]'
+                    : 'hover:bg-white/10'
                 )}
               >
                 <span className={cn(

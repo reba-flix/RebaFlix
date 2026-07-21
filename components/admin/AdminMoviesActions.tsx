@@ -42,7 +42,7 @@ export function AdminMoviesActions({ movieId, movieTitle, type = 'movie' }: Prop
         <Button
           variant="ghost"
           size="icon-sm"
-          onClick={() => router.push(`/admin/movies/${movieId}/edit`)}
+          onClick={() => router.push(type === 'series' ? `/admin/series/${movieId}/edit` : `/admin/movies/${movieId}/edit`)}
           title="Edit"
         >
           <Pencil className="h-4 w-4" />

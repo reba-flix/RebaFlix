@@ -5,6 +5,7 @@ import { ArrowLeft, Layers, Play } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { AddEpisodeForm } from './AddEpisodeForm'
+import { EpisodeActions } from './EpisodeActions'
 
 export const dynamic = 'force-dynamic'
 
@@ -80,9 +81,10 @@ export default async function AdminSeriesEpisodesPage({ params }: { params: Prom
                   </div>
                   <div className="divide-y divide-white/5">
                     {season.episodes.length > 0 ? season.episodes.map((episode) => (
-                      <div key={episode.id} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-white/[0.02] transition-colors">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
+                      <div key={episode.id} className="p-4 hover:bg-white/[0.02] transition-colors">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-2 mb-1">
                             <span className="text-xs font-bold bg-white/10 text-white/70 px-2 py-0.5 rounded">
                               EP {episode.number}
                             </span>
@@ -95,16 +97,27 @@ export default async function AdminSeriesEpisodesPage({ params }: { params: Prom
                               <span className="text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full">Draft</span>
                             )}
                           </div>
-                          <div className="text-xs text-white/40 truncate max-w-sm">
-                            {episode.videoUrl}
+                            <div className="text-xs text-white/40 truncate max-w-sm">
+                              {episode.videoUrl}
+                            </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Button variant="outline" size="sm" asChild className="bg-transparent border-white/20 text-white hover:bg-white/10">
-                            <Link href={`/watch/${episode.id}`} target="_blank">
-                              <Play className="w-3.5 h-3.5 mr-1" /> Test
-                            </Link>
-                          </Button>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button variant="outline" size="sm" asChild className="bg-transparent border-white/20 text-white hover:bg-white/10">
+                              <Link href={`/watch/${episode.id}`} target="_blank">
+                                <Play className="w-3.5 h-3.5 mr-1" /> Test
+                              </Link>
+                            </Button>
+                            <EpisodeActions
+                              episode={{
+                                id: episode.id,
+                                seasonNumber: season.number,
+                                number: episode.number,
+                                title: episode.title,
+                                videoUrl: episode.videoUrl || '',
+                                published: episode.published,
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
                     )) : (

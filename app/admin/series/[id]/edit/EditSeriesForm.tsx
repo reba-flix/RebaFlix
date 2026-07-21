@@ -40,10 +40,12 @@ export default function EditSeriesForm({ series }: { series: any }) {
     tagline: series.tagline || '',
     description: stripTranslator(series.description || ''),
     translator: extractTranslator(series.description || ''),
+    trailerUrl: series.trailerUrl || '',
     downloadUrl: series.downloadUrl || '',
     contentRating: series.contentRating || '',
     featured: series.featured || false,
     published: series.published || false,
+    isOldContent: series.isOldContent || false,
     genreIds: series.genres?.map((g: any) => g.genreId) || [] as string[],
   })
 
@@ -138,6 +140,8 @@ export default function EditSeriesForm({ series }: { series: any }) {
           description: finalDescription,
           posterUrl: posterUrl || undefined,
           backdropUrl: backdropUrl || undefined,
+          trailerUrl: formData.trailerUrl,
+          downloadUrl: formData.downloadUrl,
         }),
       })
 
@@ -220,7 +224,7 @@ export default function EditSeriesForm({ series }: { series: any }) {
           </div>
 
           <div className="rounded-md border border-white/10 bg-white/[0.03] p-6 space-y-4">
-            <h2 className="text-xl font-bold">Media Uploads</h2>
+            <h2 className="text-xl font-bold">Media & Links</h2>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -250,6 +254,14 @@ export default function EditSeriesForm({ series }: { series: any }) {
                     Uploading: {uploadProgress.backdrops}%
                   </div>
                 )}
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-white/70 mb-1">Trailer Link</label>
+                <Input name="trailerUrl" value={formData.trailerUrl} onChange={handleChange} placeholder="https://example.com/trailer.mp4" />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-white/70 mb-1">Download Link</label>
+                <Input name="downloadUrl" value={formData.downloadUrl} onChange={handleChange} placeholder="https://www.mediafire.com/file/..." />
               </div>
             </div>
           </div>
@@ -295,6 +307,16 @@ export default function EditSeriesForm({ series }: { series: any }) {
                   className="rounded bg-black border-white/20 text-primary-500 focus:ring-primary-500 h-5 w-5"
                 />
                 <span>Featured (Show on homepage banner)</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  name="isOldContent" 
+                  checked={formData.isOldContent} 
+                  onChange={handleChange} 
+                  className="rounded bg-black border-white/20 text-primary-500 focus:ring-primary-500 h-5 w-5"
+                />
+                <span>Old Series (Sort lower in catalog)</span>
               </label>
             </div>
           </div>

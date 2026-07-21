@@ -32,6 +32,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       featured,
       published,
       genreIds,
+      isOldContent,
     } = body
 
     const type = body.type || 'movie'
@@ -58,9 +59,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           backdropUrl: backdropUrl !== undefined ? backdropUrl : undefined,
           trailerUrl: trailerUrl !== undefined ? trailerUrl : undefined,
           downloadUrl: downloadUrl !== undefined ? downloadUrl : undefined,
-          contentRating: contentRating !== undefined ? contentRating : undefined,
+          contentRating: contentRating !== undefined ? contentRating || null : undefined,
           featured: featured !== undefined ? Boolean(featured) : undefined,
           published: published !== undefined ? Boolean(published) : undefined,
+          isOldContent: isOldContent !== undefined ? Boolean(isOldContent) : undefined,
           genres: genreIds?.length
             ? { create: genreIds.map((genreId: string) => ({ genreId })) }
             : undefined,
@@ -90,7 +92,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           downloadUrl: downloadUrl !== undefined ? downloadUrl : undefined,
           runtimeMinutes: runtimeMinutes !== undefined ? Number(runtimeMinutes) : undefined,
           releaseDate: releaseDate ? new Date(releaseDate) : undefined,
-          contentRating: contentRating !== undefined ? contentRating : undefined,
+          contentRating: contentRating !== undefined ? contentRating || null : undefined,
           featured: featured !== undefined ? Boolean(featured) : undefined,
           published: published !== undefined ? Boolean(published) : undefined,
           genres: genreIds?.length

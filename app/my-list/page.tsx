@@ -27,12 +27,26 @@ export default async function MyListPage({
     const [favs, later] = await Promise.all([
       prisma.favorite.findMany({
         where: { userId: user.id },
-        include: { movie: true, series: true },
+        include: {
+          movie: { include: { parts: { where: { published: true }, select: { id: true } } } },
+          series: {
+            include: {
+              seasons: { include: { episodes: { select: { number: true }, where: { published: true } } } },
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.watchLater.findMany({
         where: { userId: user.id },
-        include: { movie: true, series: true },
+        include: {
+          movie: { include: { parts: { where: { published: true }, select: { id: true } } } },
+          series: {
+            include: {
+              seasons: { include: { episodes: { select: { number: true }, where: { published: true } } } },
+            },
+          },
+        },
         orderBy: { createdAt: 'desc' },
       }),
     ])

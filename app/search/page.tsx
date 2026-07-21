@@ -2,13 +2,14 @@ import { Search } from 'lucide-react'
 import { ContentRow } from '@/components/content/ContentRow'
 import { Input } from '@/components/ui/input'
 import { prisma } from '@/lib/prisma'
+import { translatorMatches } from '@/lib/translator'
 
 export const dynamic = 'force-dynamic'
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const { q = '' } = await searchParams
   const query = q.trim()
-  const [movies, series] = query
+  const [rawMovies, rawSeries] = query
     ? await Promise.all([
         prisma.movie.findMany({
           where: {
@@ -19,7 +20,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
               { genres: { some: { genre: { name: { contains: query, mode: 'insensitive' } } } } },
             ],
           },
-          take: 24,
+          orderBy: { createdAt: 'desc' },
+          take: 80,
+          include: {
+            genres: { include: { genre: true } },
+            parts: { where: { published: true }, select: { id: true } },
+          },
         }),
         prisma.series.findMany({
           where: {
@@ -27,12 +33,31 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
             OR: [
               { title: { contains: query, mode: 'insensitive' } },
               { description: { contains: query, mode: 'insensitive' } },
+              { genres: { some: { genre: { name: { contains: query, mode: 'insensitive' } } } } },
             ],
           },
-          take: 24,
+          orderBy: { createdAt: 'desc' },
+          take: 80,
+          include: {
+            genres: { include: { genre: true } },
+            seasons: {
+              include: { _count: { select: { episodes: true } } },
+            },
+          },
         }),
       ])
     : [[], []]
+
+  const sortTranslatorMatchesFirst = <T extends { description?: string | null; createdAt?: Date }>(items: T[]) =>
+    [...items].sort((a, b) => {
+      const aTranslator = translatorMatches(a.description, query) ? 1 : 0
+      const bTranslator = translatorMatches(b.description, query) ? 1 : 0
+      if (aTranslator !== bTranslator) return bTranslator - aTranslator
+      return (b.createdAt?.getTime() ?? 0) - (a.createdAt?.getTime() ?? 0)
+    })
+
+  const movies = sortTranslatorMatchesFirst(rawMovies).slice(0, 50)
+  const series = sortTranslatorMatchesFirst(rawSeries).slice(0, 50)
 
   return (
     <main className="min-h-screen space-y-8 px-4 pb-16 pt-28 md:px-8 lg:px-12">

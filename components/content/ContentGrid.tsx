@@ -18,6 +18,9 @@ export function ContentGrid({ items }: ContentGridProps) {
               return Math.max(max, seasonMax)
             }, 0)
           : undefined
+        const partCount = type === 'movie'
+          ? item.partCount ?? ((item.parts?.length ?? 0) + (item.videoUrl ? 1 : 0))
+          : undefined
 
         return (
           <MediaCard
@@ -30,6 +33,7 @@ export function ContentGrid({ items }: ContentGridProps) {
             rating={item.averageRating}
             translator={item.translator ?? extractTranslator(item.description)}
             latestEpisodeNumber={latestEpisodeNumber}
+            partCount={partCount}
             releaseYear={item.releaseDate ? new Date(item.releaseDate).getFullYear() : undefined}
           />
         )

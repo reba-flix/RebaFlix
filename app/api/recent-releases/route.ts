@@ -5,37 +5,59 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
-    // Fetch latest 5 movies
     const movies = await prisma.movie.findMany({
       where: { published: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
       take: 5,
       select: {
         id: true,
+        slug: true,
         title: true,
         posterUrl: true,
         createdAt: true,
+        updatedAt: true,
+        videoUrl: true,
+        parts: { where: { published: true }, select: { id: true } },
       },
     })
 
-    // Fetch latest 5 series
     const series = await prisma.series.findMany({
       where: { published: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
       take: 5,
       select: {
         id: true,
+        slug: true,
         title: true,
         posterUrl: true,
         createdAt: true,
+        updatedAt: true,
+        seasons: {
+          select: {
+            episodes: {
+              select: { number: true },
+              where: { published: true },
+            },
+          },
+        },
       },
     })
 
-    // Combine and sort
     const allReleases = [
-      ...movies.map(m => ({ ...m, type: 'movie' as const })),
-      ...series.map(s => ({ ...s, type: 'series' as const }))
-    ].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+      ...movies.map(m => ({
+        ...m,
+        type: 'movie' as const,
+        partCount: m.parts.length + (m.videoUrl ? 1 : 0),
+      })),
+      ...series.map(s => ({
+        ...s,
+        type: 'series' as const,
+        latestEpisodeNumber: s.seasons.reduce((max, season) => {
+          const seasonMax = season.episodes.reduce((episodeMax, episode) => Math.max(episodeMax, episode.number), 0)
+          return Math.max(max, seasonMax)
+        }, 0),
+      }))
+    ].sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
      .slice(0, 5) // Return only the most recent 5 overall
 
     return NextResponse.json({ releases: allReleases })

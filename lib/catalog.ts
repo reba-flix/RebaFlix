@@ -5,30 +5,30 @@ export async function getHomeCatalog() {
     await Promise.all([
       prisma.movie.findFirst({
         where: { published: true, featured: true },
-        include: { genres: { include: { genre: true } } },
-        orderBy: { createdAt: 'desc' },
+        include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
+        orderBy: { updatedAt: 'desc' },
       }),
       prisma.movie.findMany({
         where: { published: true },
-        orderBy: [{ isOldContent: 'asc' }, { viewCount: 'desc' }, { createdAt: 'desc' }],
+        orderBy: [{ isOldContent: 'asc' }, { viewCount: 'desc' }, { updatedAt: 'desc' }],
         take: 18,
-        include: { genres: { include: { genre: true } } },
+        include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
       prisma.movie.findMany({
         where: { published: true },
         orderBy: [{ isOldContent: 'asc' }, { viewCount: 'desc' }],
         take: 18,
-        include: { genres: { include: { genre: true } } },
+        include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
       prisma.movie.findMany({
         where: { published: true, isOldContent: false },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { updatedAt: 'desc' },
         take: 50,
-        include: { genres: { include: { genre: true } } },
+        include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
       prisma.series.findMany({
         where: { published: true, isOldContent: false },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { updatedAt: 'desc' },
         take: 50,
         include: {
           genres: { include: { genre: true } },
@@ -41,11 +41,11 @@ export async function getHomeCatalog() {
         where: { published: true },
         orderBy: [{ isOldContent: 'asc' }, { averageRating: 'desc' }],
         take: 18,
-        include: { genres: { include: { genre: true } } },
+        include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
       prisma.series.findMany({
         where: { published: true },
-        orderBy: [{ isOldContent: 'asc' }, { createdAt: 'desc' }],
+        orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }],
         take: 18,
         include: {
           genres: { include: { genre: true } },
@@ -56,27 +56,27 @@ export async function getHomeCatalog() {
       }),
       prisma.movie.findMany({
         where: { published: true, genres: { some: { genre: { name: { contains: 'kids', mode: 'insensitive' } } } } },
-        orderBy: [{ isOldContent: 'asc' }, { createdAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } } },
+        orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
       prisma.movie.findMany({
         where: { published: true, genres: { some: { genre: { name: { contains: 'action', mode: 'insensitive' } } } } },
-        orderBy: [{ isOldContent: 'asc' }, { createdAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } } },
+        orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
       prisma.movie.findMany({
         where: { published: true, genres: { some: { genre: { name: { contains: 'comedy', mode: 'insensitive' } } } } },
-        orderBy: [{ isOldContent: 'asc' }, { createdAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } } },
+        orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
       prisma.movie.findMany({
         where: { published: true, genres: { some: { genre: { name: { contains: 'drama', mode: 'insensitive' } } } } },
-        orderBy: [{ isOldContent: 'asc' }, { createdAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } } },
+        orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
       prisma.movie.findMany({
         where: { published: true, genres: { some: { genre: { name: { contains: 'horror', mode: 'insensitive' } } } } },
-        orderBy: [{ isOldContent: 'asc' }, { createdAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } } },
+        orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
       prisma.movie.findMany({
         where: { published: true, genres: { some: { genre: { name: { contains: 'anime', mode: 'insensitive' } } } } },
-        orderBy: [{ isOldContent: 'asc' }, { createdAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } } },
+        orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
     ])
 

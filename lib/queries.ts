@@ -25,8 +25,8 @@ export function getPublishedMovies(args: {
       where,
       skip: (args.page - 1) * args.limit,
       take: args.limit,
-      orderBy: { createdAt: 'desc' },
-      include: { genres: { include: { genre: true } } },
+      orderBy: { updatedAt: 'desc' },
+      include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
     }),
     prisma.movie.count({ where }),
   ])

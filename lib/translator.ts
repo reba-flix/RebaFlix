@@ -8,3 +8,8 @@ export function stripTranslator(description?: string | null) {
   if (!description) return ''
   return description.replace(translatorPattern, '').trim()
 }
+
+export function translatorMatches(description: string | null | undefined, query: string) {
+  const translator = extractTranslator(description)
+  return translator?.toLowerCase().includes(query.trim().toLowerCase()) ?? false
+}

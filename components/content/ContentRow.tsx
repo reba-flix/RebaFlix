@@ -19,11 +19,15 @@ type RowItem = {
   itemType?: 'movie' | 'series' | 'live'
   genres?: Array<{ genre: { name: string } }>
   seasons?: Array<{ _count?: { episodes?: number }; episodes?: Array<{ number?: number | null }> }>
+  parts?: Array<unknown>
   _count?: { seasons?: number }
   episodeCount?: number
   latestEpisodeNumber?: number
+  partCount?: number
+  videoUrl?: string | null
   releaseDate?: string | Date | null
   createdAt?: string | Date | null
+  updatedAt?: string | Date | null
 }
 
 type ContentRowProps = {
@@ -76,6 +80,9 @@ export function ContentRow({ title, items, type = 'movie' }: ContentRowProps) {
                 }, 0)
               }
             }
+            const partCount = cardType === 'movie'
+              ? item.partCount ?? ((item.parts?.length ?? 0) + (item.videoUrl ? 1 : 0))
+              : undefined
 
             return (
               <MediaCard
@@ -89,6 +96,7 @@ export function ContentRow({ title, items, type = 'movie' }: ContentRowProps) {
                 translator={item.translator ?? extractTranslator(item.description)}
                 genres={genreNames}
                 latestEpisodeNumber={latestEpisodeNumber}
+                partCount={partCount}
                 releaseYear={item.releaseDate ? new Date(item.releaseDate).getFullYear() : undefined}
               />
             )

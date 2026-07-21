@@ -16,15 +16,16 @@ async function BrowseContent({ searchParams }: { searchParams: Promise<{ [key: s
     title = 'New & Popular'
     const movies = await prisma.movie.findMany({
       where: { published: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
       take: 24,
+      include: { parts: { where: { published: true }, select: { id: true } } },
     })
     items = movies.map(item => ({ ...item, type: 'movie' }))
   } else if (type === 'series') {
     title = 'TV Series'
     const series = await prisma.series.findMany({
       where: { published: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
       take: 24,
       include: {
         seasons: {
@@ -37,16 +38,18 @@ async function BrowseContent({ searchParams }: { searchParams: Promise<{ [key: s
     title = 'Movies'
     const movies = await prisma.movie.findMany({
       where: { published: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
       take: 24,
+      include: { parts: { where: { published: true }, select: { id: true } } },
     })
     items = movies.map(item => ({ ...item, type: 'movie' }))
   } else {
     // Just fetch some movies for general browse
     const movies = await prisma.movie.findMany({
       where: { published: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { updatedAt: 'desc' },
       take: 24,
+      include: { parts: { where: { published: true }, select: { id: true } } },
     })
     items = movies.map(item => ({ ...item, type: 'movie' }))
   }

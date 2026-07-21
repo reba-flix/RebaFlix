@@ -47,28 +47,34 @@ export async function POST(
       return NextResponse.json({ error: 'Movie not found.' }, { status: 404 })
     }
 
-    const part = await prisma.moviePart.upsert({
-      where: {
-        movieId_number: {
+    const [part] = await prisma.$transaction([
+      prisma.moviePart.upsert({
+        where: {
+          movieId_number: {
+            movieId,
+            number: partNumber,
+          },
+        },
+        create: {
           movieId,
           number: partNumber,
+          title,
+          videoUrl,
+          downloadUrl: downloadUrl || null,
+          published: true,
         },
-      },
-      create: {
-        movieId,
-        number: partNumber,
-        title,
-        videoUrl,
-        downloadUrl: downloadUrl || null,
-        published: true,
-      },
-      update: {
-        title,
-        videoUrl,
-        downloadUrl: downloadUrl || null,
-        published: true,
-      },
-    })
+        update: {
+          title,
+          videoUrl,
+          downloadUrl: downloadUrl || null,
+          published: true,
+        },
+      }),
+      prisma.movie.update({
+        where: { id: movieId },
+        data: { updatedAt: new Date() },
+      }),
+    ])
 
     revalidatePath(`/admin/movies/${movieId}/parts`)
     revalidatePath(`/movie/${movie.slug}`)

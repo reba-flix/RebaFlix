@@ -42,6 +42,7 @@ export default async function HomePage() {
   // New Releases should reflect upload order and skip content marked old by admins.
   const mixedNewReleases = [...taggedNewReleases, ...taggedSeries].sort((a, b) => {
     const getMs = (item: any) => {
+      if (item.updatedAt) return new Date(item.updatedAt).getTime()
       if (item.createdAt) return new Date(item.createdAt).getTime()
       if (item.releaseDate) return new Date(item.releaseDate).getTime()
       return 0

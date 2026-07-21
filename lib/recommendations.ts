@@ -6,7 +6,7 @@ export async function getRecommendedForUser(userId?: string) {
       where: { published: true },
       orderBy: [{ averageRating: 'desc' }, { viewCount: 'desc' }],
       take: 20,
-      include: { genres: { include: { genre: true } } },
+      include: { genres: { include: { genre: true } }, parts: { select: { id: true } } },
     })
   }
 
@@ -41,6 +41,6 @@ export async function getRecommendedForUser(userId?: string) {
     },
     orderBy: [{ averageRating: 'desc' }, { viewCount: 'desc' }, { createdAt: 'desc' }],
     take: 20,
-    include: { genres: { include: { genre: true } } },
+    include: { genres: { include: { genre: true } }, parts: { select: { id: true } } },
   })
 }

@@ -28,7 +28,17 @@ export function Navbar() {
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
-  const [recentReleases, setRecentReleases] = useState<{id: string, title: string, posterUrl: string | null, type: 'movie' | 'series', createdAt: string}[]>([])
+  const [recentReleases, setRecentReleases] = useState<{
+    id: string
+    slug: string
+    title: string
+    posterUrl: string | null
+    type: 'movie' | 'series'
+    createdAt: string
+    updatedAt: string
+    latestEpisodeNumber?: number
+    partCount?: number
+  }[]>([])
   const searchRef = useRef<HTMLInputElement>(null)
   const { user, isAdmin, signOut } = useAuth()
   const router = useRouter()
@@ -219,7 +229,7 @@ export function Navbar() {
                           recentReleases.map(item => (
                             <Link 
                               key={item.id} 
-                              href={`/${item.type === 'movie' ? 'watch' : 'series'}/${item.id}`}
+                              href={item.type === 'movie' ? `/movie/${item.slug}` : `/series/${item.slug}`}
                               onClick={() => setShowNotifications(false)}
                               className="flex gap-4 p-4 border-b border-white/5 hover:bg-white/5 transition-colors items-start"
                             >
@@ -236,14 +246,18 @@ export function Navbar() {
                                     New {item.type}
                                   </p>
                                   <p className="text-[10px] text-white/40 shrink-0">
-                                    {formatTimeAgo(item.createdAt)}
+                                    {formatTimeAgo(item.updatedAt || item.createdAt)}
                                   </p>
                                 </div>
                                 <p className="text-sm font-medium text-white line-clamp-2 leading-tight">
                                   {item.title}
                                 </p>
                                 <p className="text-xs text-white/50 mt-1.5">
-                                  Now available to watch.
+                                  {item.type === 'movie' && item.partCount && item.partCount > 1
+                                    ? `${item.partCount} parts now available.`
+                                    : item.type === 'series' && item.latestEpisodeNumber
+                                      ? `Episode ${item.latestEpisodeNumber} now available.`
+                                      : 'Now available to watch.'}
                                 </p>
                               </div>
                             </Link>

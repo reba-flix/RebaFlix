@@ -66,26 +66,32 @@ export async function POST(
       })
     }
 
-    const episode = await prisma.episode.upsert({
-      where: {
-        seasonId_number: {
+    const [episode] = await prisma.$transaction([
+      prisma.episode.upsert({
+        where: {
+          seasonId_number: {
+            seasonId: season.id,
+            number: episodeNumber,
+          },
+        },
+        create: {
           seasonId: season.id,
           number: episodeNumber,
+          title,
+          videoUrl,
+          published: true,
         },
-      },
-      create: {
-        seasonId: season.id,
-        number: episodeNumber,
-        title,
-        videoUrl,
-        published: true,
-      },
-      update: {
-        title,
-        videoUrl,
-        published: true,
-      },
-    })
+        update: {
+          title,
+          videoUrl,
+          published: true,
+        },
+      }),
+      prisma.series.update({
+        where: { id: seriesId },
+        data: { updatedAt: new Date() },
+      }),
+    ])
 
     revalidatePath(`/admin/series/${seriesId}/episodes`)
     revalidatePath(`/series/${series.slug}`)

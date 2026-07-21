@@ -39,6 +39,25 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
     include: { genres: { include: { genre: true } } },
   })
 
+  const watchParts = [
+    ...(movie.videoUrl
+      ? [{
+          id: movie.id,
+          title: movie.title,
+          videoUrl: movie.videoUrl,
+          downloadId: movie.id,
+        }]
+      : []),
+    ...movie.parts.map((part) => ({
+      id: part.id,
+      title: part.title,
+      videoUrl: part.videoUrl,
+      downloadId: part.id,
+    })),
+  ]
+  const shouldShowParts = movie.parts.length > 0
+  const partLabel = (index: number) => `Part ${String.fromCharCode(65 + index)}`
+
   return (
     <main className="min-h-screen pb-16">
       <section className="relative min-h-[72vh] overflow-hidden">
@@ -111,14 +130,14 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
 
       <section className="grid gap-8 px-4 md:px-8 lg:grid-cols-[1fr_22rem] lg:px-12">
         <div className="space-y-8">
-          {movie.parts.length > 0 ? (
+          {shouldShowParts ? (
             <div>
               <h2 className="mb-3 font-display text-2xl font-bold">Watch / Download</h2>
               <div className="space-y-3">
-                {movie.parts.map((part) => (
+                {watchParts.map((part, index) => (
                   <article key={part.id} className="flex flex-col gap-3 rounded-md border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                      <p className="text-lg font-bold text-white">Part {part.number}: {part.title}</p>
+                      <p className="text-lg font-bold text-white">{partLabel(index)}</p>
                     </div>
                     <div className="flex shrink-0 flex-wrap gap-3">
                       {isExternalVideoUrl(part.videoUrl) ? (
@@ -138,7 +157,7 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
                         </Button>
                       )}
                       <Button asChild variant="outline" className="border-white/20 bg-transparent text-white hover:bg-white/10">
-                        <a href={`/api/movies/${part.id}/download`} target="_blank" rel="noopener noreferrer">
+                        <a href={`/api/movies/${part.downloadId}/download`} target="_blank" rel="noopener noreferrer">
                           <Download className="mr-2 h-4 w-4" />
                           Download
                         </a>

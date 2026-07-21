@@ -85,7 +85,10 @@ export default async function AdminMoviesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
-              {movies.map((movie) => (
+              {movies.map((movie) => {
+                const partCount = movie.parts.length + (movie.videoUrl ? 1 : 0)
+
+                return (
                 <tr key={movie.id} className="hover:bg-white/[0.02] transition-colors">
                   <td className="py-4 px-6">
                     <div className="font-medium text-white">{movie.title}</div>
@@ -107,7 +110,7 @@ export default async function AdminMoviesPage() {
                   <td className="py-4 px-6 text-white/60">
                     <Link href={`/admin/movies/${movie.id}/parts`} className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-1 text-xs font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white">
                       <Clapperboard className="h-3.5 w-3.5" />
-                      {movie.parts.length} part{movie.parts.length !== 1 ? 's' : ''}
+                      {partCount} part{partCount !== 1 ? 's' : ''}
                     </Link>
                   </td>
                   <td className="py-4 px-6 text-right">
@@ -118,7 +121,8 @@ export default async function AdminMoviesPage() {
                     />
                   </td>
                 </tr>
-              ))}
+                )
+              })}
               {movies.length === 0 && (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-white/40">

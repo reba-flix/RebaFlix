@@ -342,17 +342,17 @@ export function VideoPlayer({
 
       {/* Episode / Parts List Panel */}
       {showEpisodes && seasons && seasons.length > 0 && (
-        <div className="absolute inset-y-0 right-0 z-30 w-72 bg-[#141414]/97 backdrop-blur-sm flex flex-col pointer-events-auto border-l border-white/10">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
+        <div className="absolute inset-y-2 right-2 z-30 flex max-h-[calc(100%-1rem)] w-[min(22rem,calc(100%-1rem))] flex-col overflow-hidden rounded-lg border border-white/10 bg-[#141414]/95 shadow-2xl shadow-black/60 backdrop-blur-md pointer-events-auto sm:inset-y-4 sm:right-4 sm:max-h-[calc(100%-2rem)]">
+          <div className="flex shrink-0 items-center justify-between px-3 py-2.5 border-b border-white/10">
             <h3 className="text-white font-bold text-sm">{playlistLabel}</h3>
-            <button onClick={() => setShowEpisodes(false)} className="text-white/60 hover:text-white transition-colors">
+            <button onClick={() => setShowEpisodes(false)} className="rounded-md p-1 text-white/60 transition-colors hover:bg-white/10 hover:text-white" aria-label={`Close ${playlistLabel.toLowerCase()} list`}>
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Season Tabs */}
           {seasons.length > 1 && (
-            <div className="flex gap-1 px-3 py-2 border-b border-white/10 overflow-x-auto scrollbar-hide">
+            <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-white/10 px-3 py-2 scrollbar-hide">
               {seasons.map(season => (
                 <button
                   key={season.id}
@@ -371,27 +371,27 @@ export function VideoPlayer({
           )}
 
           {/* Episode List */}
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/20">
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 scrollbar-thin scrollbar-thumb-white/20">
             {(seasons.find(s => s.id === activeSeason) ?? seasons[0])?.episodes.map(ep => (
               <button
                 key={ep.id}
                 onClick={() => { setShowEpisodes(false); router.push(`/watch/${ep.id}`) }}
                 className={cn(
-                  'w-full text-left px-4 py-3 border-b border-white/[0.06] transition-colors flex items-start gap-3',
+                  'w-full text-left px-3 py-2.5 border-b border-white/[0.06] transition-colors flex items-center gap-3',
                   ep.id === currentEpisodeId
                     ? 'bg-[#E50914]/15 border-l-2 border-l-[#E50914]'
                     : 'hover:bg-white/5'
                 )}
               >
                 <span className={cn(
-                  'text-2xl font-black shrink-0 leading-tight mt-0.5',
+                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-base font-black leading-none',
                   ep.id === currentEpisodeId ? 'text-[#E50914]' : 'text-white/30'
                 )}>
                   {ep.number}
                 </span>
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <p className={cn(
-                    'text-sm font-semibold leading-snug truncate',
+                    'line-clamp-2 text-xs font-semibold leading-snug sm:text-sm',
                     ep.id === currentEpisodeId ? 'text-[#E50914]' : 'text-white'
                   )}>
                     {ep.title || `Episode ${ep.number}`}
@@ -401,7 +401,7 @@ export function VideoPlayer({
                   )}
                 </div>
                 {ep.id === currentEpisodeId && (
-                  <Play className="w-3.5 h-3.5 fill-[#E50914] text-[#E50914] shrink-0 mt-1" />
+                  <Play className="w-3.5 h-3.5 fill-[#E50914] text-[#E50914] shrink-0" />
                 )}
               </button>
             ))}

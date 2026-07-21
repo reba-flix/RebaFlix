@@ -1,26 +1,65 @@
 import Link from 'next/link'
-import { Plus, Pencil, Trash2, Tv, Play, Layers } from 'lucide-react'
+import { Plus, Tv, Play, Layers, Search } from 'lucide-react'
 import { getSessionUser, hasRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { AdminMoviesActions } from '@/components/admin/AdminMoviesActions'
+import { Input } from '@/components/ui/input'
+import type { Prisma } from '@prisma/client'
 
 export const dynamic = 'force-dynamic'
 
-export default async function AdminSeriesPage() {
+const PAGE_SIZE = 12
+
+function paginationHref(page: number, q: string) {
+  const params = new URLSearchParams()
+  if (q) params.set('q', q)
+  if (page > 1) params.set('page', String(page))
+  const query = params.toString()
+  return query ? `/admin/series?${query}` : '/admin/series'
+}
+
+export default async function AdminSeriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string; q?: string }>
+}) {
   const user = await getSessionUser()
   if (!hasRole(user, 'ADMIN')) redirect('/')
 
-  const series = await prisma.series.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { 
-      genres: { include: { genre: true } },
-      seasons: { include: { episodes: true } }
-    },
-  })
+  const { page: pageParam, q: rawQuery = '' } = await searchParams
+  const q = rawQuery.trim()
+  const currentPage = Math.max(1, Number(pageParam) || 1)
+  const where: Prisma.SeriesWhereInput = q
+    ? {
+        OR: [
+          { title: { contains: q, mode: 'insensitive' } },
+          { slug: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+          { genres: { some: { genre: { name: { contains: q, mode: 'insensitive' } } } } },
+        ],
+      }
+    : {}
 
-  const totalPublished = series.filter((s) => s.published).length
+  const [series, totalSeries, totalPublished] = await Promise.all([
+    prisma.series.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (currentPage - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        genres: { include: { genre: true } },
+        seasons: { include: { episodes: { where: { published: true }, select: { id: true } } } }
+      },
+    }),
+    prisma.series.count({ where }),
+    prisma.series.count({ where: { published: true } }),
+  ])
+
+  const totalPages = Math.max(1, Math.ceil(totalSeries / PAGE_SIZE))
+  const firstItem = totalSeries === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1
+  const lastItem = Math.min(currentPage * PAGE_SIZE, totalSeries)
 
   return (
     <main className="px-4 pb-16 pt-8 md:px-8 lg:px-12 w-full">
@@ -44,7 +83,7 @@ export default async function AdminSeriesPage() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {[
-          { label: 'Total Series', value: series.length, icon: Tv, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+          { label: q ? 'Matching Series' : 'Total Series', value: totalSeries, icon: Tv, color: 'text-blue-400', bg: 'bg-blue-400/10' },
           { label: 'Published', value: totalPublished, icon: Play, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
         ].map(({ label, value, icon: Icon, color, bg }) => (
           <div key={label} className="group bg-[#1a1a1a] rounded-xl border border-white/5 p-5 flex items-center gap-4 hover:bg-white/[0.04] transition-all">
@@ -61,8 +100,17 @@ export default async function AdminSeriesPage() {
 
       {/* All Series Table */}
       <div className="bg-[#1a1a1a] rounded-xl border border-white/10 overflow-hidden">
-        <div className="px-6 py-4 border-b border-white/10">
+        <div className="flex flex-col gap-4 px-6 py-4 border-b border-white/10 lg:flex-row lg:items-center lg:justify-between">
           <h2 className="text-base font-semibold text-white">All Series</h2>
+          <form action="/admin/series" className="relative w-full lg:w-80">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+            <Input
+              name="q"
+              defaultValue={q}
+              placeholder="Search series..."
+              className="h-10 border-white/10 bg-black/30 pl-9 text-sm"
+            />
+          </form>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm text-white/70">
@@ -119,12 +167,30 @@ export default async function AdminSeriesPage() {
               {series.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-white/40">
-                    No series found. Click <span className="text-white/70 font-medium">Add Series</span> to get started.
+                    {q ? 'No series match your search.' : (
+                      <>No series found. Click <span className="text-white/70 font-medium">Add Series</span> to get started.</>
+                    )}
                   </td>
                 </tr>
               )}
             </tbody>
           </table>
+        </div>
+        <div className="flex flex-col gap-3 border-t border-white/10 px-6 py-4 text-sm text-white/50 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            Showing {firstItem}-{lastItem} of {totalSeries}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" asChild disabled={currentPage <= 1} className="border-white/20 bg-transparent text-white hover:bg-white/10">
+              <Link href={paginationHref(currentPage - 1, q)} aria-disabled={currentPage <= 1}>Previous</Link>
+            </Button>
+            <span className="min-w-20 text-center text-xs font-semibold text-white/60">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button variant="outline" size="sm" asChild disabled={currentPage >= totalPages} className="border-white/20 bg-transparent text-white hover:bg-white/10">
+              <Link href={paginationHref(currentPage + 1, q)} aria-disabled={currentPage >= totalPages}>Next</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </main>

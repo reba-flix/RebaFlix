@@ -22,6 +22,7 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
       genres: { include: { genre: true } },
       languages: { include: { language: true } },
       subtitles: { include: { language: true } },
+      parts: { where: { published: true }, orderBy: { number: 'asc' } },
       comments: { include: { user: true }, orderBy: { createdAt: 'desc' }, take: 10 },
     },
   })
@@ -110,6 +111,45 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
 
       <section className="grid gap-8 px-4 md:px-8 lg:grid-cols-[1fr_22rem] lg:px-12">
         <div className="space-y-8">
+          {movie.parts.length > 0 ? (
+            <div>
+              <h2 className="mb-3 font-display text-2xl font-bold">Watch / Download</h2>
+              <div className="space-y-3">
+                {movie.parts.map((part) => (
+                  <article key={part.id} className="flex flex-col gap-3 rounded-md border border-white/10 bg-white/[0.03] p-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-lg font-bold text-white">Part {part.number}: {part.title}</p>
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-3">
+                      {isExternalVideoUrl(part.videoUrl) ? (
+                        <PlayButton
+                          href={part.videoUrl}
+                          contentId={movie.id}
+                          contentType="movie"
+                          label="Watch"
+                          className="inline-flex items-center gap-2 rounded-md bg-[#E50914] px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-[#b80710]"
+                        />
+                      ) : (
+                        <Button asChild className="bg-[#E50914] text-white hover:bg-[#b80710]">
+                          <Link href={`/watch/${part.id}`}>
+                            <Play className="h-4 w-4 fill-current" />
+                            Watch
+                          </Link>
+                        </Button>
+                      )}
+                      <Button asChild variant="outline" className="border-white/20 bg-transparent text-white hover:bg-white/10">
+                        <a href={`/api/movies/${part.id}/download`} target="_blank" rel="noopener noreferrer">
+                          <Download className="mr-2 h-4 w-4" />
+                          Download
+                        </a>
+                      </Button>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div>
             <h2 className="mb-3 font-display text-2xl font-bold">Cast & Crew</h2>
             <p className="text-white/70">Director: {movie.director?.name ?? 'RebaFlix Studios'}</p>

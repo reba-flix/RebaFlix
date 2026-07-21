@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Plus, Film, Eye } from 'lucide-react'
+import { Plus, Film, Eye, Clapperboard } from 'lucide-react'
 import { getSessionUser, hasRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
@@ -13,7 +13,10 @@ export default async function AdminMoviesPage() {
 
   const movies = await prisma.movie.findMany({
     orderBy: { createdAt: 'desc' },
-    include: { genres: { include: { genre: true } } },
+    include: {
+      genres: { include: { genre: true } },
+      parts: { select: { id: true } },
+    },
   })
 
   const totalPublished = movies.filter((m) => m.published).length
@@ -77,6 +80,7 @@ export default async function AdminMoviesPage() {
                 <th className="py-3 px-6 text-xs font-semibold text-white/50 uppercase tracking-wider">Status</th>
                 <th className="py-3 px-6 text-xs font-semibold text-white/50 uppercase tracking-wider">Release Date</th>
                 <th className="py-3 px-6 text-xs font-semibold text-white/50 uppercase tracking-wider">Genres</th>
+                <th className="py-3 px-6 text-xs font-semibold text-white/50 uppercase tracking-wider">Parts</th>
                 <th className="py-3 px-6 text-xs font-semibold text-white/50 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
@@ -100,6 +104,12 @@ export default async function AdminMoviesPage() {
                   <td className="py-4 px-6 text-white/60">
                     {movie.genres.map((g) => g.genre.name).join(', ') || '—'}
                   </td>
+                  <td className="py-4 px-6 text-white/60">
+                    <Link href={`/admin/movies/${movie.id}/parts`} className="inline-flex items-center gap-1.5 rounded-md bg-white/5 px-2.5 py-1 text-xs font-medium text-white/70 transition-colors hover:bg-white/10 hover:text-white">
+                      <Clapperboard className="h-3.5 w-3.5" />
+                      {movie.parts.length} part{movie.parts.length !== 1 ? 's' : ''}
+                    </Link>
+                  </td>
                   <td className="py-4 px-6 text-right">
                     <AdminMoviesActions
                       movieId={movie.id}
@@ -111,7 +121,7 @@ export default async function AdminMoviesPage() {
               ))}
               {movies.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="py-12 text-center text-white/40">
+                  <td colSpan={6} className="py-12 text-center text-white/40">
                     No movies found. Click <span className="text-white/70 font-medium">Add Movie</span> to get started.
                   </td>
                 </tr>

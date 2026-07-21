@@ -26,6 +26,11 @@ async function BrowseContent({ searchParams }: { searchParams: Promise<{ [key: s
       where: { published: true },
       orderBy: { createdAt: 'desc' },
       take: 24,
+      include: {
+        seasons: {
+          include: { episodes: { select: { number: true } } },
+        },
+      },
     })
     items = series.map(item => ({ ...item, type: 'series' }))
   } else if (type === 'movie') {

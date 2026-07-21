@@ -18,9 +18,10 @@ type RowItem = {
   translator?: string | null
   itemType?: 'movie' | 'series' | 'live'
   genres?: Array<{ genre: { name: string } }>
-  seasons?: Array<{ _count?: { episodes?: number }; episodes?: any[] }>
+  seasons?: Array<{ _count?: { episodes?: number }; episodes?: Array<{ number?: number | null }> }>
   _count?: { seasons?: number }
   episodeCount?: number
+  latestEpisodeNumber?: number
   releaseDate?: string | Date | null
   createdAt?: string | Date | null
 }
@@ -61,15 +62,17 @@ export function ContentRow({ title, items, type = 'movie' }: ContentRowProps) {
             // Extract genre names
             const genreNames = item.genres?.map(g => g.genre.name) ?? []
 
-            // Calculate episode count for series
-            let episodeCount: number | undefined = undefined
+            // Calculate the latest episode number for series
+            let latestEpisodeNumber: number | undefined = undefined
             if (cardType === 'series') {
-              if (item.episodeCount !== undefined) {
-                episodeCount = item.episodeCount
+              if (item.latestEpisodeNumber !== undefined) {
+                latestEpisodeNumber = item.latestEpisodeNumber
               } else if (item.seasons) {
-                // Sum up episodes across all seasons
-                episodeCount = item.seasons.reduce((sum, season) => {
-                  return sum + (season._count?.episodes ?? season.episodes?.length ?? 0)
+                latestEpisodeNumber = item.seasons.reduce((max, season) => {
+                  const seasonMax = season.episodes?.reduce((episodeMax, episode) => {
+                    return Math.max(episodeMax, Number(episode.number) || 0)
+                  }, 0) ?? season._count?.episodes ?? 0
+                  return Math.max(max, seasonMax)
                 }, 0)
               }
             }
@@ -85,7 +88,7 @@ export function ContentRow({ title, items, type = 'movie' }: ContentRowProps) {
                 rating={item.averageRating}
                 translator={item.translator ?? extractTranslator(item.description)}
                 genres={genreNames}
-                episodeCount={episodeCount}
+                latestEpisodeNumber={latestEpisodeNumber}
                 releaseYear={item.releaseDate ? new Date(item.releaseDate).getFullYear() : undefined}
               />
             )

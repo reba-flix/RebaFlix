@@ -41,7 +41,7 @@ type MediaCardProps = {
   href?: string
   compact?: boolean
   genres?: string[]
-  episodeCount?: number
+  latestEpisodeNumber?: number
   releaseYear?: number | string | null
 }
 
@@ -56,7 +56,7 @@ export function MediaCard({
   href,
   compact,
   genres = [],
-  episodeCount,
+  latestEpisodeNumber,
   releaseYear,
 }: MediaCardProps) {
   const target = href ?? (type === 'live' ? '/live' : `/${type === 'series' ? 'series' : 'movie'}/${slug ?? id}`)
@@ -182,12 +182,12 @@ export function MediaCard({
           </button>
         </div>
 
-        {/* ── EPISODE COUNT BADGE (always visible, bottom-left) ── */}
-        {isSeason && episodeCount !== undefined && episodeCount > 0 && (
+        {/* ── LATEST EPISODE BADGE (always visible, bottom-left) ── */}
+        {isSeason && latestEpisodeNumber !== undefined && latestEpisodeNumber > 0 && (
           <div className="absolute bottom-[4.75rem] left-1/2 z-10 -translate-x-1/2 pointer-events-none">
             <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-[#E50914] px-3 py-1.5 text-[11px] font-black text-white shadow-lg shadow-black/50">
               <Film className="h-3 w-3 flex-shrink-0" />
-              {episodeCount} {episodeCount === 1 ? 'Episode' : 'Episodes'}
+              Ep {latestEpisodeNumber}
             </span>
           </div>
         )}

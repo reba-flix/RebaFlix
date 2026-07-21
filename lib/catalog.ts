@@ -33,7 +33,7 @@ export async function getHomeCatalog() {
         include: {
           genres: { include: { genre: true } },
           seasons: {
-            include: { _count: { select: { episodes: true } } },
+            include: { episodes: { select: { number: true } } },
           },
         },
       }),
@@ -50,7 +50,7 @@ export async function getHomeCatalog() {
         include: {
           genres: { include: { genre: true } },
           seasons: {
-            include: { _count: { select: { episodes: true } } },
+            include: { episodes: { select: { number: true } } },
           },
         },
       }),

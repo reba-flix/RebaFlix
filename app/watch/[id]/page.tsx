@@ -49,6 +49,32 @@ export default async function WatchPage({
       }
     }
   } else {
+    const moviePart = await prisma.moviePart.findUnique({
+      where: { id },
+      include: { movie: { include: { subtitles: { include: { language: true } } } } },
+    })
+
+    if (moviePart && moviePart.published && moviePart.movie.published) {
+      mediaTitle = `${moviePart.movie.title} - Part ${moviePart.number}: ${moviePart.title}`
+      mediaPoster = moviePart.movie.backdropUrl
+      src = moviePart.videoUrl
+      mediaSubtitles = moviePart.movie.subtitles
+      mediaId = moviePart.movieId
+      mediaContentType = 'movie'
+
+      const nextPart = await prisma.moviePart.findFirst({
+        where: {
+          movieId: moviePart.movieId,
+          published: true,
+          number: { gt: moviePart.number },
+        },
+        orderBy: { number: 'asc' },
+      })
+
+      if (nextPart) {
+        nextItem = { id: nextPart.id, title: `Part ${nextPart.number}: ${nextPart.title}` }
+      }
+    } else {
     // Try as episode
     const episode = await prisma.episode.findUnique({
       where: { id },
@@ -101,6 +127,7 @@ export default async function WatchPage({
       }
     } else {
       notFound()
+    }
     }
   }
 

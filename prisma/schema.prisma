@@ -141,6 +141,7 @@ model Movie {
   categories     MovieCategory[]
   languages      MovieLanguage[]
   subtitles      Subtitle[]
+  parts          MoviePart[]
   favorites      Favorite[]
   histories      History[]
   watchLater     WatchLater[]
@@ -152,6 +153,22 @@ model Movie {
   @@index([published, featured])
   @@index([releaseDate])
   @@index([averageRating])
+}
+
+model MoviePart {
+  id             String       @id @default(cuid())
+  movieId        String
+  number         Int
+  title          String
+  videoUrl       String
+  downloadUrl    String?
+  runtimeMinutes Int?
+  published      Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  movie          Movie        @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@unique([movieId, number])
 }
 
 model Series {

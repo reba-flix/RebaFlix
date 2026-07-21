@@ -95,6 +95,35 @@ export function VideoPlayer({
   const hasCounted = useRef(false)
   const playlistLabel = contentType === 'movie' ? 'Parts' : 'Episodes'
 
+  const [showControls, setShowControls] = useState(true)
+  const [isMouseOverControls, setIsMouseOverControls] = useState(false)
+  const [isInteracting, setIsInteracting] = useState(false)
+  const hideControlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const resetHideTimeout = useCallback(() => {
+    setShowControls(true)
+    if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current)
+    
+    if (!isMouseOverControls && !isInteracting) {
+      hideControlsTimeoutRef.current = setTimeout(() => {
+        setShowControls(false)
+      }, 1000)
+    }
+  }, [isMouseOverControls, isInteracting])
+
+  useEffect(() => {
+    resetHideTimeout()
+    return () => {
+      if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current)
+    }
+  }, [resetHideTimeout])
+
+  useEffect(() => {
+    const handleGlobalMouseUp = () => setIsInteracting(false)
+    window.addEventListener('mouseup', handleGlobalMouseUp)
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp)
+  }, [])
+
   const recordPlay = useCallback(() => {
     if (!contentId || hasCounted.current) return
     hasCounted.current = true
@@ -293,7 +322,12 @@ export function VideoPlayer({
   return (
     <div
       ref={containerRef}
-      className="group relative aspect-video w-full overflow-hidden rounded-md bg-black"
+      className={cn("group relative aspect-video w-full overflow-hidden rounded-md bg-black", !showControls && "cursor-none")}
+      onMouseMove={resetHideTimeout}
+      onMouseLeave={() => {
+        if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current)
+        hideControlsTimeoutRef.current = setTimeout(() => setShowControls(false), 1000)
+      }}
     >
       {/* Error Overlay */}
       {error && (
@@ -437,10 +471,15 @@ export function VideoPlayer({
       </video>
 
       {/* Gradient overlays */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/40 opacity-0 transition group-hover:opacity-100" />
+      <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-black/40 transition-opacity duration-300", showControls ? "opacity-100" : "opacity-0")} />
 
       {/* Controls */}
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-2 sm:gap-2 sm:p-3 opacity-0 transition group-hover:opacity-100">
+      <div 
+        className={cn("absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-2 sm:gap-2 sm:p-3 transition-opacity duration-300", showControls ? "opacity-100" : "opacity-0", showControls ? "pointer-events-auto" : "pointer-events-none")}
+        onMouseEnter={() => setIsMouseOverControls(true)}
+        onMouseLeave={() => setIsMouseOverControls(false)}
+        onMouseDown={() => setIsInteracting(true)}
+      >
         
         {/* Progress bar */}
         <div className="flex items-center gap-1.5 sm:gap-2">

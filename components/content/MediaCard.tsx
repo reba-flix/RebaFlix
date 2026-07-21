@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils'
 // Genre → color mapping for the badge
 const genreColors: Record<string, string> = {
   action:       'bg-red-600 text-white',
+  adventure:    'bg-emerald-600 text-white',
   drama:        'bg-blue-600 text-white',
   comedy:       'bg-yellow-500 text-black',
   horror:       'bg-purple-700 text-white',
@@ -19,6 +20,7 @@ const genreColors: Record<string, string> = {
   anime:        'bg-violet-600 text-white',
   documentary:  'bg-green-700 text-white',
   kids:         'bg-lime-400 text-black',
+  hindi:        'bg-rose-600 text-white',
   crime:        'bg-gray-700 text-white',
   sci_fi:       'bg-indigo-500 text-white',
   'sci-fi':     'bg-indigo-500 text-white',

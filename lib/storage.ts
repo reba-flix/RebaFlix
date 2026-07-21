@@ -77,6 +77,11 @@ function getR2ObjectKey(url: string) {
 }
 
 export async function generatePresignedDownloadUrl(url: string, filename: string) {
+  const publicBaseUrl = env.r2PublicUrl?.replace(/\/$/, '')
+  if (publicBaseUrl && url.startsWith(`${publicBaseUrl}/`)) {
+    return url
+  }
+
   const key = getR2ObjectKey(url)
   if (!key || !env.r2Endpoint || !env.r2AccessKeyId || !env.r2SecretAccessKey) {
     return null

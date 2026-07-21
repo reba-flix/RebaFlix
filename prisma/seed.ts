@@ -1,18 +1,9 @@
 import { PrismaClient } from '@prisma/client'
+import { defaultGenres, slugifyTaxonomyName } from '../lib/taxonomy-data'
 
 const prisma = new PrismaClient()
 
-const genres = [
-  'Action',
-  'Comedy',
-  'Drama',
-  'Horror',
-  'Anime',
-  'Documentaries',
-  'African Movies',
-  'Rwandan Movies',
-  'Kids',
-]
+const genres = defaultGenres
 
 const languages = [
   { code: 'en', name: 'English', nativeName: 'English' },
@@ -37,14 +28,14 @@ async function main() {
 
   for (const name of genres) {
     await prisma.genre.upsert({
-      where: { slug: name.toLowerCase().replaceAll(' ', '-') },
-      update: {},
-      create: { name, slug: name.toLowerCase().replaceAll(' ', '-') },
+      where: { slug: slugifyTaxonomyName(name) },
+      update: { name },
+      create: { name, slug: slugifyTaxonomyName(name) },
     })
     await prisma.category.upsert({
-      where: { slug: name.toLowerCase().replaceAll(' ', '-') },
-      update: {},
-      create: { name, slug: name.toLowerCase().replaceAll(' ', '-') },
+      where: { slug: slugifyTaxonomyName(name) },
+      update: { name },
+      create: { name, slug: slugifyTaxonomyName(name) },
     })
   }
 

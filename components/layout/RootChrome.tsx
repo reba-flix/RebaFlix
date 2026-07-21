@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import { AdminUploadStatus } from '@/components/admin/AdminUploadStatus'
 import { Footer } from '@/components/layout/Footer'
 import { SupportChatWrapper } from '@/components/layout/SupportChatWrapper'
 
@@ -12,6 +13,7 @@ export function RootChrome() {
     <>
       {!isAdmin && <Footer />}
       <SupportChatWrapper />
+      <AdminUploadStatus />
     </>
   )
 }

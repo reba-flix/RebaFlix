@@ -58,7 +58,7 @@ export function SupportChat() {
           else if (roles.includes('ADMIN')) isAdmin = true
         }
 
-        if (isSuperAdmin) {
+        if (isSuperAdmin || isAdmin) {
           senderName = 'RebaFlix'
         }
 
@@ -105,7 +105,7 @@ export function SupportChat() {
       else if (roles.includes('ADMIN')) isAdmin = true
     }
 
-    if (isSuperAdmin) {
+    if (isSuperAdmin || isAdmin) {
       senderName = 'RebaFlix'
     }
 
@@ -241,7 +241,9 @@ export function SupportChat() {
                         className={`flex flex-col max-w-[85%] gap-0.5 group/msg ${msg.isMe ? 'self-end items-end' : 'self-start items-start'}`}
                       >
                         {!msg.isMe && (
-                          <span className={`text-[10px] px-1 font-semibold ${msg.isSuperAdmin ? 'text-[#E50914]' : 'text-white/50'}`}>
+                          <span className={`text-[10px] px-1 font-semibold ${
+                            msg.isSuperAdmin ? 'text-[#E50914]' : msg.isAdmin ? 'text-green-500' : 'text-white/50'
+                          }`}>
                             {msg.senderName}
                           </span>
                         )}

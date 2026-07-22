@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -207,6 +207,12 @@ function WatchCard({ item, onRemove }: { item: WatchItem; onRemove: (id: string)
 export function ContinueWatchingGrid({ items: initialItems }: { items: WatchItem[] }) {
   const [items, setItems] = useState<WatchItem[]>(initialItems)
   const router = useRouter()
+
+  // Force Next.js to refresh the data when the page is visited
+  // This bypasses the client-side router cache which might hide newly watched items
+  useEffect(() => {
+    router.refresh()
+  }, [router])
 
   const handleRemove = useCallback((historyId: string) => {
     setItems((prev) => prev.filter((i) => i.historyId !== historyId))

@@ -100,18 +100,41 @@ export function VideoPlayer({
   const [isInteracting, setIsInteracting] = useState(false)
   const hideControlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // ─── Progress persistence ───────────────────────────────────────────────
-  const saveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const lastSavedPositionRef = useRef<number>(-1)
+  // ─── Progress persistence (dual: localStorage + API) ────────────────────
+  const localKey = contentId ? `reba_progress_${contentId}` : null
+  const apiIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastLocalSaveRef = useRef<number>(0)
+  const lastApiSaveRef = useRef<number>(-1)
   const resumedRef = useRef(false)
 
-  /** Save current playback position to /api/history */
-  const saveProgress = useCallback(
+  /** Save position to localStorage immediately (throttled to once per second) */
+  const saveToLocal = useCallback(
+    (positionSeconds: number, durationSeconds: number, completed = false) => {
+      if (!localKey || durationSeconds < 5) return
+      const now = Date.now()
+      if (!completed && now - lastLocalSaveRef.current < 1000) return
+      lastLocalSaveRef.current = now
+      try {
+        const payload = {
+          contentId,
+          contentType,
+          positionSeconds: Math.floor(positionSeconds),
+          durationSeconds: Math.floor(durationSeconds),
+          completed,
+          savedAt: now,
+        }
+        localStorage.setItem(localKey, JSON.stringify(payload))
+      } catch { /* storage full — ignore */ }
+    },
+    [localKey, contentId, contentType]
+  )
+
+  /** Save position to /api/history (called every 10 seconds + on pause/end) */
+  const saveToApi = useCallback(
     (positionSeconds: number, durationSeconds: number, completed = false) => {
       if (!contentId || durationSeconds < 5) return
-      // Avoid spamming identical values
-      if (!completed && Math.abs(positionSeconds - lastSavedPositionRef.current) < 3) return
-      lastSavedPositionRef.current = positionSeconds
+      if (!completed && Math.abs(positionSeconds - lastApiSaveRef.current) < 3) return
+      lastApiSaveRef.current = positionSeconds
       const body = contentType === 'episode'
         ? { episodeId: contentId, positionSeconds: Math.floor(positionSeconds), durationSeconds: Math.floor(durationSeconds), completed }
         : { movieId: contentId, positionSeconds: Math.floor(positionSeconds), durationSeconds: Math.floor(durationSeconds), completed }
@@ -119,15 +142,49 @@ export function VideoPlayer({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-      }).catch(console.warn)
+      }).catch(() => { /* will retry on next interval */ })
     },
     [contentId, contentType]
   )
 
-  /** Fetch saved position and seek to it once metadata is loaded */
+  /** Resume: check localStorage first (instant, no auth), then API (cross-device) */
   const resumeFromSaved = useCallback(async () => {
     if (!contentId || resumedRef.current) return
     resumedRef.current = true
+    const video = videoRef.current
+    if (!video) return
+
+    // 1. Try localStorage first (fastest, works offline)
+    if (localKey) {
+      try {
+        const raw = localStorage.getItem(localKey)
+        if (raw) {
+          const saved = JSON.parse(raw)
+          if (saved.positionSeconds > 5 && !saved.completed) {
+            if (video.currentTime < saved.positionSeconds) {
+              video.currentTime = saved.positionSeconds
+            }
+            // Still try API in background for cross-device sync
+            fetch('/api/history')
+              .then(r => r.ok ? r.json() : null)
+              .then((data: any[] | null) => {
+                if (!data) return
+                const entry = data.find((h: any) =>
+                  contentType === 'episode' ? h.episodeId === contentId : h.movieId === contentId
+                )
+                // Use API position only if it's further ahead than local
+                if (entry && !entry.completed && entry.positionSeconds > (video.currentTime + 10)) {
+                  video.currentTime = entry.positionSeconds
+                }
+              })
+              .catch(() => {})
+            return
+          }
+        }
+      } catch { /* ignore localStorage errors */ }
+    }
+
+    // 2. Fallback: API only
     try {
       const res = await fetch('/api/history')
       if (!res.ok) return
@@ -136,38 +193,29 @@ export function VideoPlayer({
         contentType === 'episode' ? h.episodeId === contentId : h.movieId === contentId
       )
       if (entry && entry.positionSeconds > 5 && !entry.completed) {
-        const video = videoRef.current
-        if (video) {
-          // Only seek if we haven't already progressed past this point
-          if (video.currentTime < entry.positionSeconds) {
-            video.currentTime = entry.positionSeconds
-          }
+        if (video.currentTime < entry.positionSeconds) {
+          video.currentTime = entry.positionSeconds
         }
       }
-    } catch {
-      // silently ignore
-    }
-  }, [contentId, contentType])
+    } catch { /* silently ignore */ }
+  }, [contentId, contentType, localKey])
 
-  // Reset resume flag when src changes
-  useEffect(() => { resumedRef.current = false }, [src])
+  // Reset resume flag + local key tracking when src/contentId changes
+  useEffect(() => { resumedRef.current = false }, [src, contentId])
 
-  // Auto-save every 5 seconds while playing
+  // Auto-save to API every 10 seconds while playing
   useEffect(() => {
-    const startSaving = () => {
-      if (saveIntervalRef.current) clearInterval(saveIntervalRef.current)
-      saveIntervalRef.current = setInterval(() => {
-        const video = videoRef.current
-        if (video && !video.paused && video.duration > 0) {
-          saveProgress(video.currentTime, video.duration)
-        }
-      }, 5000)
-    }
-    startSaving()
+    if (apiIntervalRef.current) clearInterval(apiIntervalRef.current)
+    apiIntervalRef.current = setInterval(() => {
+      const video = videoRef.current
+      if (video && !video.paused && video.duration > 0) {
+        saveToApi(video.currentTime, video.duration)
+      }
+    }, 10000)
     return () => {
-      if (saveIntervalRef.current) clearInterval(saveIntervalRef.current)
+      if (apiIntervalRef.current) clearInterval(apiIntervalRef.current)
     }
-  }, [saveProgress])
+  }, [saveToApi])
 
   const resetHideTimeout = useCallback(() => {
     setShowControls(true)
@@ -320,6 +368,9 @@ export function VideoPlayer({
     setProgress(video.currentTime)
     setDuration(video.duration || 0)
     onProgress?.(Math.floor(video.currentTime), Math.floor(video.duration || 0))
+    if (video.duration > 0) {
+      saveToLocal(video.currentTime, video.duration)
+    }
   }
 
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -528,11 +579,17 @@ export function VideoPlayer({
         onPause={() => {
           setPlaying(false)
           const video = videoRef.current
-          if (video && video.duration > 0) saveProgress(video.currentTime, video.duration)
+          if (video && video.duration > 0) {
+            saveToLocal(video.currentTime, video.duration)
+            saveToApi(video.currentTime, video.duration)
+          }
         }}
         onEnded={() => {
           const video = videoRef.current
-          if (video && video.duration > 0) saveProgress(video.duration, video.duration, true)
+          if (video && video.duration > 0) {
+            saveToLocal(video.duration, video.duration, true)
+            saveToApi(video.duration, video.duration, true)
+          }
           handleEnded()
         }}
         onError={() => setError('Failed to load video. The format may be unsupported or the link is broken.')}

@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Bell, ChevronDown, Menu, X, User, Heart,
-  Clock, LogOut, Settings, Shield, Bookmark
+  Clock, LogOut, Settings, Shield, Bookmark, PlayCircle
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { BrandLogo } from '@/components/brand/BrandLogo'
@@ -137,6 +137,22 @@ export function Navbar() {
                   {link.label}
                 </Link>
               ))}
+              {/* Continue Watching — only for signed-in users */}
+              {user && (
+                <Link
+                  href="/continue-watching"
+                  prefetch={true}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200',
+                    pathname === '/continue-watching'
+                      ? 'text-white bg-white/10'
+                      : 'text-white/70 hover:text-white'
+                  )}
+                >
+                  <PlayCircle className="w-3.5 h-3.5" />
+                  Continue Watching
+                </Link>
+              )}
             </div>
 
             {/* Mobile Browse Menu */}
@@ -422,6 +438,22 @@ export function Navbar() {
                     {link.label}
                   </Link>
                 ))}
+                {/* Continue Watching in mobile drawer */}
+                {user && (
+                  <Link
+                    href="/continue-watching"
+                    onClick={() => setShowMobileMenu(false)}
+                    className={cn(
+                      'flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors',
+                      pathname === '/continue-watching'
+                        ? 'text-white bg-white/10'
+                        : 'text-white/70 hover:text-white hover:bg-white/5'
+                    )}
+                  >
+                    <PlayCircle className="w-4 h-4" />
+                    Continue Watching
+                  </Link>
+                )}
               </div>
               {!user && (
                 <div className="p-5 border-t border-white/10 flex flex-col gap-2">

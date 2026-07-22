@@ -100,6 +100,75 @@ export function VideoPlayer({
   const [isInteracting, setIsInteracting] = useState(false)
   const hideControlsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // ─── Progress persistence ───────────────────────────────────────────────
+  const saveIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastSavedPositionRef = useRef<number>(-1)
+  const resumedRef = useRef(false)
+
+  /** Save current playback position to /api/history */
+  const saveProgress = useCallback(
+    (positionSeconds: number, durationSeconds: number, completed = false) => {
+      if (!contentId || durationSeconds < 5) return
+      // Avoid spamming identical values
+      if (!completed && Math.abs(positionSeconds - lastSavedPositionRef.current) < 3) return
+      lastSavedPositionRef.current = positionSeconds
+      const body = contentType === 'episode'
+        ? { episodeId: contentId, positionSeconds: Math.floor(positionSeconds), durationSeconds: Math.floor(durationSeconds), completed }
+        : { movieId: contentId, positionSeconds: Math.floor(positionSeconds), durationSeconds: Math.floor(durationSeconds), completed }
+      fetch('/api/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }).catch(console.warn)
+    },
+    [contentId, contentType]
+  )
+
+  /** Fetch saved position and seek to it once metadata is loaded */
+  const resumeFromSaved = useCallback(async () => {
+    if (!contentId || resumedRef.current) return
+    resumedRef.current = true
+    try {
+      const res = await fetch('/api/history')
+      if (!res.ok) return
+      const data: any[] = await res.json()
+      const entry = data.find((h: any) =>
+        contentType === 'episode' ? h.episodeId === contentId : h.movieId === contentId
+      )
+      if (entry && entry.positionSeconds > 5 && !entry.completed) {
+        const video = videoRef.current
+        if (video) {
+          // Only seek if we haven't already progressed past this point
+          if (video.currentTime < entry.positionSeconds) {
+            video.currentTime = entry.positionSeconds
+          }
+        }
+      }
+    } catch {
+      // silently ignore
+    }
+  }, [contentId, contentType])
+
+  // Reset resume flag when src changes
+  useEffect(() => { resumedRef.current = false }, [src])
+
+  // Auto-save every 5 seconds while playing
+  useEffect(() => {
+    const startSaving = () => {
+      if (saveIntervalRef.current) clearInterval(saveIntervalRef.current)
+      saveIntervalRef.current = setInterval(() => {
+        const video = videoRef.current
+        if (video && !video.paused && video.duration > 0) {
+          saveProgress(video.currentTime, video.duration)
+        }
+      }, 5000)
+    }
+    startSaving()
+    return () => {
+      if (saveIntervalRef.current) clearInterval(saveIntervalRef.current)
+    }
+  }, [saveProgress])
+
   const resetHideTimeout = useCallback(() => {
     setShowControls(true)
     if (hideControlsTimeoutRef.current) clearTimeout(hideControlsTimeoutRef.current)
@@ -451,10 +520,21 @@ export function VideoPlayer({
         playsInline
         controls={false}
         onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={e => setDuration(e.currentTarget.duration)}
+        onLoadedMetadata={e => {
+          setDuration(e.currentTarget.duration)
+          resumeFromSaved()
+        }}
         onPlay={() => { setPlaying(true); recordPlay() }}
-        onPause={() => setPlaying(false)}
-        onEnded={handleEnded}
+        onPause={() => {
+          setPlaying(false)
+          const video = videoRef.current
+          if (video && video.duration > 0) saveProgress(video.currentTime, video.duration)
+        }}
+        onEnded={() => {
+          const video = videoRef.current
+          if (video && video.duration > 0) saveProgress(video.duration, video.duration, true)
+          handleEnded()
+        }}
         onError={() => setError('Failed to load video. The format may be unsupported or the link is broken.')}
         onClick={togglePlay}
       >

@@ -143,13 +143,16 @@ export function Navbar() {
                   href="/continue-watching"
                   prefetch={true}
                   className={cn(
-                    'flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-md transition-colors duration-200',
+                    'flex items-center gap-1.5 px-3 py-2 text-sm font-bold rounded-md transition-all duration-300 text-[#E50914]',
                     pathname === '/continue-watching'
-                      ? 'text-white bg-white/10'
-                      : 'text-white/70 hover:text-white'
+                      ? 'bg-[#E50914]/15'
+                      : 'hover:bg-[#E50914]/10'
                   )}
                 >
-                  <PlayCircle className="w-3.5 h-3.5" />
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute inset-0 bg-[#E50914] rounded-full blur-[6px] opacity-80 animate-pulse" />
+                    <PlayCircle className="w-4 h-4 text-[#E50914] relative z-10 fill-[#E50914]/20" />
+                  </div>
                   Continue Watching
                 </Link>
               )}
@@ -444,13 +447,16 @@ export function Navbar() {
                     href="/continue-watching"
                     onClick={() => setShowMobileMenu(false)}
                     className={cn(
-                      'flex items-center gap-2 px-5 py-3 text-sm font-medium transition-colors',
+                      'flex items-center gap-2 px-5 py-3 text-sm font-bold transition-colors text-[#E50914]',
                       pathname === '/continue-watching'
-                        ? 'text-white bg-white/10'
-                        : 'text-white/70 hover:text-white hover:bg-white/5'
+                        ? 'bg-[#E50914]/15'
+                        : 'hover:bg-[#E50914]/10'
                     )}
                   >
-                    <PlayCircle className="w-4 h-4" />
+                    <div className="relative flex items-center justify-center">
+                      <div className="absolute inset-0 bg-[#E50914] rounded-full blur-[6px] opacity-80 animate-pulse" />
+                      <PlayCircle className="w-4 h-4 text-[#E50914] relative z-10 fill-[#E50914]/20" />
+                    </div>
                     Continue Watching
                   </Link>
                 )}

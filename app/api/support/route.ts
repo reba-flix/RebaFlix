@@ -20,8 +20,8 @@ export async function POST(request: NextRequest) {
       data: {
         message: message.trim(),
         userId: user?.id ?? null,
-        guestName: user ? null : 'Guest',
-        guestEmail: user ? null : (sessionId ?? null),
+        guestName: user ? (user.name ?? user.email.split('@')[0]) : 'Guest',
+        guestEmail: user ? user.email : (sessionId ?? null),
       },
     })
 
@@ -41,16 +41,15 @@ export async function GET(request: NextRequest) {
 
     if (!user && !sessionId) return NextResponse.json({ messages: [] })
 
-    const where = user 
-      ? { OR: [{ userId: user.id }, { guestEmail: sessionId }] }
-      : { guestEmail: sessionId }
-
     const messages = await prisma.supportMessage.findMany({
-      where,
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: 'desc' },
+      take: 100, // Only fetch the last 100 messages for the global chat
+      include: {
+        user: { select: { name: true, email: true, avatarUrl: true } }
+      }
     })
 
-    return NextResponse.json({ messages })
+    return NextResponse.json({ messages: messages.reverse() })
   } catch (error) {
     console.error('Fetch support messages error:', error)
     return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 })

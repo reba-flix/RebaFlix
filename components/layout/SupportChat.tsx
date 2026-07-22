@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { MessageCircle, X, Send, Minimize2, GripHorizontal } from 'lucide-react'
+import { MessageCircle, X, Send, Minimize2, GripHorizontal, Edit2, Trash2, Check } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 
 interface Message {
@@ -23,6 +23,8 @@ export function SupportChat() {
   const [sending, setSending] = useState(false)
   const [sessionId, setSessionId] = useState('')
   const [messages, setMessages] = useState<Message[]>([])
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editInput, setEditInput] = useState('')
   const chatRef = useRef<HTMLDivElement>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
   const pollRef = useRef<NodeJS.Timeout | null>(null)
@@ -129,6 +131,28 @@ export function SupportChat() {
     }
   }
 
+  const deleteMessage = async (id: string) => {
+    setMessages(prev => prev.filter(m => m.id !== id))
+    try {
+      await fetch(`/api/support/${id}?sessionId=${sessionId}`, { method: 'DELETE' })
+      await fetchMessages()
+    } catch { /* silent */ }
+  }
+
+  const saveEdit = async (id: string) => {
+    if (!editInput.trim()) return
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, text: editInput.trim() } : m))
+    setEditingId(null)
+    try {
+      await fetch(`/api/support/${id}?sessionId=${sessionId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: editInput.trim(), sessionId }),
+      })
+      await fetchMessages()
+    } catch { /* silent */ }
+  }
+
   return (
     <>
       {/* Floating Button */}
@@ -214,14 +238,14 @@ export function SupportChat() {
                     {messages.map((msg) => (
                       <div
                         key={msg.id}
-                        className={`flex flex-col max-w-[85%] gap-0.5 ${msg.isMe ? 'self-end items-end' : 'self-start items-start'}`}
+                        className={`flex flex-col max-w-[85%] gap-0.5 group/msg ${msg.isMe ? 'self-end items-end' : 'self-start items-start'}`}
                       >
                         {!msg.isMe && (
                           <span className={`text-[10px] px-1 font-semibold ${msg.isSuperAdmin ? 'text-[#E50914]' : 'text-white/50'}`}>
                             {msg.senderName}
                           </span>
                         )}
-                        <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-md ${
+                        <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-md flex items-center gap-2 ${
                           msg.isSuperAdmin
                             ? 'bg-gradient-to-r from-[#E50914] to-green-600 text-white rounded-bl-sm'
                             : msg.isAdmin
@@ -230,7 +254,44 @@ export function SupportChat() {
                             ? 'bg-[#E50914] text-white rounded-br-sm'
                             : 'bg-white/10 text-white/90 rounded-bl-sm'
                         }`}>
-                          {msg.text}
+                          {editingId === msg.id ? (
+                            <div className="flex items-center gap-2">
+                              <input
+                                autoFocus
+                                type="text"
+                                value={editInput}
+                                onChange={(e) => setEditInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && saveEdit(msg.id)}
+                                className="bg-white/20 text-white px-2 py-1 rounded text-sm outline-none border border-white/30"
+                              />
+                              <button onClick={() => saveEdit(msg.id)} className="text-white hover:text-green-300">
+                                <Check className="w-4 h-4" />
+                              </button>
+                              <button onClick={() => setEditingId(null)} className="text-white hover:text-red-300">
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <span>{msg.text}</span>
+                              {msg.isMe && (
+                                <div className="flex items-center gap-1 opacity-0 group-hover/msg:opacity-100 transition-opacity ml-1">
+                                  <button
+                                    onClick={() => { setEditingId(msg.id); setEditInput(msg.text); }}
+                                    className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                                  >
+                                    <Edit2 className="w-3 h-3 text-white" />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteMessage(msg.id)}
+                                    className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                                  >
+                                    <Trash2 className="w-3 h-3 text-white" />
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          )}
                         </div>
                         <span className="text-[10px] text-white/30 px-1">{msg.time}</span>
                       </div>

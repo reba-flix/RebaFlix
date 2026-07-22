@@ -11,6 +11,8 @@ interface Message {
   senderName: string
   text: string
   time: string
+  isAdmin?: boolean
+  isSuperAdmin?: boolean
 }
 
 export function SupportChat() {
@@ -43,12 +45,29 @@ export function SupportChat() {
       const fetched: Message[] = []
       for (const m of data.messages ?? []) {
         const isMyMessage = user ? m.userId === user.id : m.guestEmail === sessionId
+        
+        let isSuperAdmin = false
+        let isAdmin = false
+        let senderName = m.guestName || 'User'
+
+        if (m.user?.roles) {
+          const roles = m.user.roles.map((r: any) => r.role.name)
+          if (roles.includes('SUPER_ADMIN')) isSuperAdmin = true
+          else if (roles.includes('ADMIN')) isAdmin = true
+        }
+
+        if (isSuperAdmin) {
+          senderName = 'RebaFlix'
+        }
+
         fetched.push({
           id: m.id,
           isMe: !!isMyMessage,
-          senderName: m.guestName || 'User',
+          senderName,
           text: m.message,
           time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isAdmin,
+          isSuperAdmin,
         })
       }
       setMessages(fetched)
@@ -74,12 +93,28 @@ export function SupportChat() {
     setSending(true)
 
     // Optimistic add
+    let isSuperAdmin = false
+    let isAdmin = false
+    let senderName = user ? ((user as any).name ?? (user as any).email?.split('@')[0] ?? 'User') : 'Guest'
+
+    if (user && (user as any).roles) {
+      const roles = (user as any).roles.map((r: any) => r.role.name)
+      if (roles.includes('SUPER_ADMIN')) isSuperAdmin = true
+      else if (roles.includes('ADMIN')) isAdmin = true
+    }
+
+    if (isSuperAdmin) {
+      senderName = 'RebaFlix'
+    }
+
     setMessages(prev => [...prev, {
       id: Date.now().toString(),
       isMe: true,
-      senderName: user ? ((user as any).name ?? (user as any).email?.split('@')[0] ?? 'User') : 'Guest',
+      senderName,
       text,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      isAdmin,
+      isSuperAdmin,
     }])
 
     try {
@@ -182,12 +217,18 @@ export function SupportChat() {
                         className={`flex flex-col max-w-[85%] gap-0.5 ${msg.isMe ? 'self-end items-end' : 'self-start items-start'}`}
                       >
                         {!msg.isMe && (
-                          <span className="text-[10px] text-white/50 px-1">{msg.senderName}</span>
+                          <span className={`text-[10px] px-1 font-semibold ${msg.isSuperAdmin ? 'text-[#E50914]' : 'text-white/50'}`}>
+                            {msg.senderName}
+                          </span>
                         )}
-                        <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed ${
-                          msg.isMe
-                            ? 'bg-[#E50914] text-white rounded-br-sm shadow-md'
-                            : 'bg-white/10 text-white/90 rounded-bl-sm shadow-md'
+                        <div className={`px-3 py-2 rounded-2xl text-sm leading-relaxed shadow-md ${
+                          msg.isSuperAdmin
+                            ? 'bg-gradient-to-r from-[#E50914] to-green-600 text-white rounded-bl-sm'
+                            : msg.isAdmin
+                            ? 'bg-yellow-600 text-white rounded-bl-sm'
+                            : msg.isMe
+                            ? 'bg-[#E50914] text-white rounded-br-sm'
+                            : 'bg-white/10 text-white/90 rounded-bl-sm'
                         }`}>
                           {msg.text}
                         </div>

@@ -45,7 +45,14 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
       take: 100, // Only fetch the last 100 messages for the global chat
       include: {
-        user: { select: { name: true, email: true, avatarUrl: true } }
+        user: { 
+          select: { 
+            name: true, 
+            email: true, 
+            avatarUrl: true,
+            roles: { include: { role: true } }
+          } 
+        }
       }
     })
 

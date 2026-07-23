@@ -1,4 +1,5 @@
 import { ContentRow } from '@/components/content/ContentRow'
+import { NewReleasesRow } from '@/components/content/NewReleasesRow'
 import { HeroBanner } from '@/components/content/HeroBanner'
 import { fallbackRows } from '@/lib/catalog'
 import { getHomeCatalog } from '@/lib/catalog'
@@ -39,10 +40,9 @@ export default async function HomePage() {
   const taggedNewReleases = rawNewReleases.map(item => ({ ...item, itemType: 'movie' as const }))
   const taggedSeries = rawSeries.map(item => ({ ...item, itemType: 'series' as const }))
   
-  // New Releases should reflect upload order and skip content marked old by admins.
+  // New Releases: sorted by when the content was first added to the platform
   const mixedNewReleases = [...taggedNewReleases, ...taggedSeries].sort((a, b) => {
     const getMs = (item: any) => {
-      if (item.updatedAt) return new Date(item.updatedAt).getTime()
       if (item.createdAt) return new Date(item.createdAt).getTime()
       if (item.releaseDate) return new Date(item.releaseDate).getTime()
       return 0
@@ -55,7 +55,7 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen space-y-8 pb-16">
       <HeroBanner movies={mixedNewReleases.slice(0, 5)} />
-      <ContentRow title="New Releases" items={mixedNewReleases} />
+      <NewReleasesRow items={mixedNewReleases} />
       <ContentRow title="Trending" items={trending} />
       <ContentRow title="Popular" items={popular} />
       <ContentRow title="Recommended" items={recommended.length ? recommended : topRated} />

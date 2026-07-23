@@ -20,16 +20,26 @@ export async function getHomeCatalog() {
         take: 18,
         include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
+      // New Releases: only content added in the last 90 days, sorted by when it was first created
       prisma.movie.findMany({
-        where: { published: true, isOldContent: false },
-        orderBy: { updatedAt: 'desc' },
-        take: 50,
+        where: {
+          published: true,
+          isOldContent: false,
+          createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 24,
         include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
+      // New Series: same 90-day recency rule
       prisma.series.findMany({
-        where: { published: true, isOldContent: false },
-        orderBy: { updatedAt: 'desc' },
-        take: 50,
+        where: {
+          published: true,
+          isOldContent: false,
+          createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 24,
         include: {
           genres: { include: { genre: true } },
           seasons: {

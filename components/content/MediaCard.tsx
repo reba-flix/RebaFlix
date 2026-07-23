@@ -117,7 +117,7 @@ export function MediaCard({
         </Link>
 
         {image ? (
-          <Image src={image} alt={title} fill sizes="(max-width: 768px) 44vw, 240px" className="object-cover pointer-events-none" />
+          <Image src={image} alt={title} fill sizes="(max-width: 768px) 44vw, 240px" className="object-cover pointer-events-none" unoptimized />
         ) : (
           <div className="flex h-full items-center justify-center px-4 text-center text-sm text-white/50 pointer-events-none">{title}</div>
         )}

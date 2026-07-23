@@ -80,6 +80,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
             priority
             sizes="100vw"
             className="object-cover"
+            unoptimized
           />
         </motion.div>
       </AnimatePresence>

@@ -200,7 +200,7 @@ function NumberedCard({ item, rank }: { item: RowItem; rank: number }) {
       {/* Poster card */}
       <div className="relative z-10 w-[110px] sm:w-[130px] shrink-0 overflow-hidden rounded-xl border border-white/10 shadow-xl shadow-black/50 transition-transform duration-300 group-hover:scale-105 group-hover:border-white/30">
         <div className="relative aspect-[2/3]">
-          <Link href={watchUrl} className="absolute inset-0 z-0" aria-label={`Play ${title}`} />
+          <Link href={watchUrl} className="absolute inset-0 z-20" aria-label={`Play ${title}`} />
           <Image
             src={image}
             alt={title}

@@ -37,7 +37,7 @@ export default async function HomePage() {
   const rawSeries = catalog?.newSeries.length ? catalog.newSeries : []
   
   // Tag them with their respective item types so the card routes correctly
-  const taggedNewReleases = rawNewReleases.map(item => {
+  const taggedNewReleases = rawNewReleases.map((item: any) => {
     let latestMs = item.createdAt ? new Date(item.createdAt).getTime() : 0
     if ('parts' in item && Array.isArray(item.parts)) {
       for (const part of item.parts) {
@@ -46,7 +46,7 @@ export default async function HomePage() {
     }
     return { ...item, itemType: 'movie' as const, createdAt: new Date(latestMs) }
   })
-  const taggedSeries = rawSeries.map(item => {
+  const taggedSeries = rawSeries.map((item: any) => {
     // seasons is now only the latest season with only the latest episode
     const latestEp = item.seasons?.[0]?.episodes?.[0]
     const latestEpisodeNumber = latestEp?.number ?? undefined

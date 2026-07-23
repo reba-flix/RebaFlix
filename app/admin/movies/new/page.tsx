@@ -25,11 +25,16 @@ export default function NewMoviePage() {
     updateMovie,
     toggleGenre,
     clearMessages,
+    resetStore,
     startUploads,
   } = useMovieUploadStore()
 
   useEffect(() => {
     isMounted.current = true
+    // Reset store on every fresh page visit so stale state (e.g. featured: true)
+    // from the previous upload session doesn't carry over.
+    resetStore()
+
     fetch('/api/admin/metadata')
       .then((res) => res.json())
       .then((data) => {

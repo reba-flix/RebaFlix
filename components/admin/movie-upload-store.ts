@@ -49,6 +49,7 @@ type UploadStore = {
   updateMovie: <K extends keyof MovieDraft>(id: string, key: K, value: MovieDraft[K]) => void
   toggleGenre: (movieId: string, genreId: string) => void
   clearMessages: () => void
+  resetStore: () => void
   startUploads: () => Promise<boolean>
 }
 
@@ -214,6 +215,7 @@ export const useMovieUploadStore = create<UploadStore>((set, get) => ({
     }))
   },
   clearMessages: () => set({ error: null, success: null }),
+  resetStore: () => set({ movies: [createDraft()], loading: false, error: null, success: null, progress: {} }),
   startUploads: async () => {
     const { movies, loading } = get()
     if (loading) return false

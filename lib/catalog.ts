@@ -20,16 +20,19 @@ export async function getHomeCatalog() {
         take: 18,
         include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
-      // New Releases: only content added in the last 90 days, sorted by when it was first created
+      // New Releases: movies created recently OR movies that got new parts recently
       prisma.movie.findMany({
         where: {
           published: true,
           isOldContent: false,
-          createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+          OR: [
+            { createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } },
+            { parts: { some: { createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } } } }
+          ]
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { updatedAt: 'desc' },
         take: 24,
-        include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
+        include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true, createdAt: true } } },
       }),
       // New Series: series created recently OR series that got new seasons/episodes recently
       prisma.series.findMany({
@@ -68,11 +71,12 @@ export async function getHomeCatalog() {
           seasons: {
             orderBy: { number: 'desc' },
             take: 1,
-            include: {
+            select: {
+              createdAt: true,
               episodes: {
                 orderBy: { number: 'desc' },
                 take: 1,
-                select: { number: true },
+                select: { number: true, createdAt: true },
               },
             },
           },

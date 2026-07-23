@@ -37,12 +37,32 @@ export default async function HomePage() {
   const rawSeries = catalog?.newSeries.length ? catalog.newSeries : []
   
   // Tag them with their respective item types so the card routes correctly
-  const taggedNewReleases = rawNewReleases.map(item => ({ ...item, itemType: 'movie' as const }))
+  const taggedNewReleases = rawNewReleases.map(item => {
+    let latestMs = item.createdAt ? new Date(item.createdAt).getTime() : 0
+    if ('parts' in item && Array.isArray(item.parts)) {
+      for (const part of item.parts) {
+        if (part.createdAt) latestMs = Math.max(latestMs, new Date(part.createdAt).getTime())
+      }
+    }
+    return { ...item, itemType: 'movie' as const, createdAt: new Date(latestMs) }
+  })
   const taggedSeries = rawSeries.map(item => {
     // seasons is now only the latest season with only the latest episode
     const latestEp = item.seasons?.[0]?.episodes?.[0]
     const latestEpisodeNumber = latestEp?.number ?? undefined
-    return { ...item, itemType: 'series' as const, latestEpisodeNumber }
+    
+    let latestMs = item.createdAt ? new Date(item.createdAt).getTime() : 0
+    if ('seasons' in item && Array.isArray(item.seasons)) {
+      for (const season of item.seasons) {
+        if (season.createdAt) latestMs = Math.max(latestMs, new Date(season.createdAt).getTime())
+        if (season.episodes && Array.isArray(season.episodes)) {
+          for (const ep of season.episodes) {
+            if (ep.createdAt) latestMs = Math.max(latestMs, new Date(ep.createdAt).getTime())
+          }
+        }
+      }
+    }
+    return { ...item, itemType: 'series' as const, latestEpisodeNumber, createdAt: new Date(latestMs) }
   })
   
   // New Releases: sorted by when the content was first added to the platform

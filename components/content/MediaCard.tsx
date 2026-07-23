@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { Languages, Play, Download, Heart, Star, Bookmark, Film } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 // Genre → color mapping for the badge
 const genreColors: Record<string, string> = {
@@ -101,8 +102,14 @@ export function MediaCard({
     } catch {} finally { setSaving(false) }
   }
 
-  const handleDownload = (e: React.MouseEvent) => {
+  const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault(); e.stopPropagation()
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      window.location.href = '/login'
+      return
+    }
     window.open(downloadTarget, '_blank')
   }
 

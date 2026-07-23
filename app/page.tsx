@@ -38,7 +38,12 @@ export default async function HomePage() {
   
   // Tag them with their respective item types so the card routes correctly
   const taggedNewReleases = rawNewReleases.map(item => ({ ...item, itemType: 'movie' as const }))
-  const taggedSeries = rawSeries.map(item => ({ ...item, itemType: 'series' as const }))
+  const taggedSeries = rawSeries.map(item => {
+    // seasons is now only the latest season with only the latest episode
+    const latestEp = item.seasons?.[0]?.episodes?.[0]
+    const latestEpisodeNumber = latestEp?.number ?? undefined
+    return { ...item, itemType: 'series' as const, latestEpisodeNumber }
+  })
   
   // New Releases: sorted by when the content was first added to the platform
   const mixedNewReleases = [...taggedNewReleases, ...taggedSeries].sort((a, b) => {

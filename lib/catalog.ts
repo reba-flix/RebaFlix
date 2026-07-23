@@ -31,19 +31,50 @@ export async function getHomeCatalog() {
         take: 24,
         include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
-      // New Series: same 90-day recency rule
+      // New Series: series created recently OR series that got new seasons/episodes recently
       prisma.series.findMany({
         where: {
           published: true,
           isOldContent: false,
-          createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+          OR: [
+            // Series itself was newly created
+            { createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) } },
+            // OR an existing series got a new season recently
+            {
+              seasons: {
+                some: {
+                  createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+                },
+              },
+            },
+            // OR an existing series got a new episode recently
+            {
+              seasons: {
+                some: {
+                  episodes: {
+                    some: {
+                      createdAt: { gte: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000) },
+                    },
+                  },
+                },
+              },
+            },
+          ],
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { updatedAt: 'desc' },
         take: 24,
         include: {
           genres: { include: { genre: true } },
           seasons: {
-            include: { episodes: { select: { number: true } } },
+            orderBy: { number: 'desc' },
+            take: 1,
+            include: {
+              episodes: {
+                orderBy: { number: 'desc' },
+                take: 1,
+                select: { number: true },
+              },
+            },
           },
         },
       }),

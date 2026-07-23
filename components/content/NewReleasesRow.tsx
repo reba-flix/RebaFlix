@@ -76,11 +76,9 @@ function SpotlightCard({ item, index }: { item: RowItem; index: number }) {
   const watchUrl = isSeries
     ? `/series/${item.slug ?? item.id}`
     : item.id ? `/watch/${item.id}` : '#'
-  // Only use slug-based info URL if slug is clean (no spaces/special chars)
-  const slugIsValid = !!item.slug && !/\s/.test(item.slug)
   const infoUrl = isSeries
-    ? `/series/${slugIsValid ? item.slug : item.id}`
-    : slugIsValid ? `/movie/${item.slug}` : watchUrl
+    ? `/series/${item.slug ?? item.id}`
+    : `/movie/${item.slug ?? item.id}`
   const addedDate = item.createdAt ?? item.releaseDate
 
   return (

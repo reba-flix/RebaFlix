@@ -12,10 +12,20 @@ import { WatchLaterButton } from './WatchLaterButton'
 
 export const dynamic = 'force-dynamic'
 
+function decodeSlug(value: string) {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
 export default async function MoviePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+  const decodedSlug = decodeSlug(slug)
+  
   const movie = await prisma.movie.findUnique({
-    where: { slug },
+    where: { slug: decodedSlug },
     include: {
       director: true,
       actors: { include: { person: true }, orderBy: { sortOrder: 'asc' } },

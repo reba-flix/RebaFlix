@@ -77,9 +77,11 @@ function getR2ObjectKey(url: string) {
 }
 
 export async function generatePresignedDownloadUrl(url: string, filename: string) {
-  const publicBaseUrl = env.r2PublicUrl?.replace(/\/$/, '')
-  if (publicBaseUrl && url.startsWith(`${publicBaseUrl}/`)) {
-    return url
+  // Check if it's a Supabase URL
+  if (url.includes('.supabase.co/storage/v1/object/public/')) {
+    const downloadUrl = new URL(url)
+    downloadUrl.searchParams.set('download', filename)
+    return downloadUrl.toString()
   }
 
   const key = getR2ObjectKey(url)

@@ -87,9 +87,9 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
     <main className="min-h-screen bg-[#0a0a0a]">
       {/* Hero Header */}
       <div className="relative h-[60vh] w-full overflow-hidden">
-        {series.backdropUrl && (
+        {(series.backdropUrl || series.posterUrl) && (
           <Image
-            src={series.backdropUrl}
+            src={(series.backdropUrl || series.posterUrl) as string}
             alt={series.title}
             fill
             className="object-cover opacity-80 mask-image-bottom-fade"

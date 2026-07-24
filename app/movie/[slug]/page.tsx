@@ -72,7 +72,7 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
     <main className="min-h-screen pb-16">
       <section className="relative min-h-[72vh] overflow-hidden">
         {(movie.backdropUrl || movie.posterUrl) ? (
-          <Image src={(movie.backdropUrl || movie.posterUrl) as string} alt={movie.title} fill priority sizes="100vw" className="object-cover" />
+          <Image src={(movie.backdropUrl || movie.posterUrl) as string} alt={movie.title} fill priority sizes="100vw" className="object-cover" unoptimized />
         ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(90deg,#141414_0%,rgba(20,20,20,0.78)_40%,rgba(20,20,20,0.25)_100%)]" />
         <div className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-[#141414] to-transparent" />

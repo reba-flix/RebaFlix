@@ -95,6 +95,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
             className="object-cover opacity-80 mask-image-bottom-fade"
             sizes="100vw"
             priority
+            unoptimized
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/50 to-transparent" />

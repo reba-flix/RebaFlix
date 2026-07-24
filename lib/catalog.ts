@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 
 export async function getHomeCatalog() {
-  const [hero, trending, popular, newReleases, newSeries, topRated, series, kids, action, comedy, drama, horror, anime] =
+  const [hero, trendingMovies, trendingSeries, popularMovies, popularSeries, newReleases, newSeries, topRated, series, kids, action, comedy, drama, horror, anime] =
     await Promise.all([
       prisma.movie.findFirst({
         where: { published: true, featured: true },
@@ -14,11 +14,51 @@ export async function getHomeCatalog() {
         take: 18,
         include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
+      prisma.series.findMany({
+        where: { published: true },
+        orderBy: [{ isOldContent: 'asc' }, { viewCount: 'desc' }, { updatedAt: 'desc' }],
+        take: 18,
+        include: {
+          genres: { include: { genre: true } },
+          seasons: {
+            orderBy: { number: 'desc' },
+            take: 1,
+            select: {
+              createdAt: true,
+              episodes: {
+                orderBy: { number: 'desc' },
+                take: 1,
+                select: { number: true, createdAt: true },
+              },
+            },
+          },
+        },
+      }),
       prisma.movie.findMany({
         where: { published: true },
         orderBy: [{ isOldContent: 'asc' }, { viewCount: 'desc' }],
         take: 18,
         include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
+      }),
+      prisma.series.findMany({
+        where: { published: true },
+        orderBy: [{ isOldContent: 'asc' }, { viewCount: 'desc' }],
+        take: 18,
+        include: {
+          genres: { include: { genre: true } },
+          seasons: {
+            orderBy: { number: 'desc' },
+            take: 1,
+            select: {
+              createdAt: true,
+              episodes: {
+                orderBy: { number: 'desc' },
+                take: 1,
+                select: { number: true, createdAt: true },
+              },
+            },
+          },
+        },
       }),
       // New Releases: movies created recently OR movies that got new parts recently
       prisma.movie.findMany({
@@ -124,6 +164,62 @@ export async function getHomeCatalog() {
         orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }], take: 18, include: { genres: { include: { genre: true } }, parts: { where: { published: true }, select: { id: true } } },
       }),
     ])
+
+  const taggedTrendingMovies = (trendingMovies || []).map((item: any) => ({
+    ...item,
+    itemType: 'movie' as const,
+    partCount: (item.parts?.length ?? 0) + (item.videoUrl ? 1 : 0),
+  }))
+
+  const taggedTrendingSeries = (trendingSeries || []).map((item: any) => {
+    const latestEp = item.seasons?.[0]?.episodes?.[0]
+    const latestEpisodeNumber = latestEp?.number ?? undefined
+    return {
+      ...item,
+      itemType: 'series' as const,
+      latestEpisodeNumber,
+    }
+  })
+
+  const trending = [...taggedTrendingMovies, ...taggedTrendingSeries].sort((a: any, b: any) => {
+    const aOld = a.isOldContent ? 1 : 0
+    const bOld = b.isOldContent ? 1 : 0
+    if (aOld !== bOld) return aOld - bOld
+
+    const aViews = a.viewCount || 0
+    const bViews = b.viewCount || 0
+    if (bViews !== aViews) return bViews - aViews
+
+    const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0
+    const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0
+    return bTime - aTime
+  })
+
+  const taggedPopularMovies = (popularMovies || []).map((item: any) => ({
+    ...item,
+    itemType: 'movie' as const,
+    partCount: (item.parts?.length ?? 0) + (item.videoUrl ? 1 : 0),
+  }))
+
+  const taggedPopularSeries = (popularSeries || []).map((item: any) => {
+    const latestEp = item.seasons?.[0]?.episodes?.[0]
+    const latestEpisodeNumber = latestEp?.number ?? undefined
+    return {
+      ...item,
+      itemType: 'series' as const,
+      latestEpisodeNumber,
+    }
+  })
+
+  const popular = [...taggedPopularMovies, ...taggedPopularSeries].sort((a: any, b: any) => {
+    const aOld = a.isOldContent ? 1 : 0
+    const bOld = b.isOldContent ? 1 : 0
+    if (aOld !== bOld) return aOld - bOld
+
+    const aViews = a.viewCount || 0
+    const bViews = b.viewCount || 0
+    return bViews - aViews
+  })
 
   return { hero, trending, popular, newReleases, newSeries, topRated, series, kids, action, comedy, drama, horror, anime }
 }

@@ -97,7 +97,7 @@ export function ContentRow({ title, items, type = 'movie' }: ContentRowProps) {
                 genres={genreNames}
                 latestEpisodeNumber={latestEpisodeNumber}
                 partCount={partCount}
-                releaseYear={item.releaseDate ? new Date(item.releaseDate).getFullYear() : undefined}
+                releaseYear={item.releaseDate ? new Date(item.releaseDate).getFullYear() : (item.createdAt ? new Date(item.createdAt).getFullYear() : undefined)}
               />
             )
           })}

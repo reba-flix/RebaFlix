@@ -91,6 +91,9 @@ export function VideoPlayer({
   const [progress, setProgress] = useState(0)
   const [duration, setDuration] = useState(0)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isBuffering, setIsBuffering] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [bufferedPercent, setBufferedPercent] = useState(0)
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const hasCounted = useRef(false)
   const playlistLabel = contentType === 'movie' ? 'Parts' : 'Episodes'
@@ -258,6 +261,9 @@ export function VideoPlayer({
     const video = videoRef.current
     if (!video) return
     setError(null)
+    setIsLoading(true)
+    setIsBuffering(false)
+    setBufferedPercent(0)
     hasCounted.current = false
 
     const isHls = src.includes('.m3u8')
@@ -455,6 +461,14 @@ export function VideoPlayer({
     if (nextItem) router.push(`/watch/${nextItem.id}`)
   }
 
+  const handleProgress = (e: React.SyntheticEvent<HTMLVideoElement>) => {
+    const video = e.currentTarget
+    if (video.buffered.length > 0 && video.duration > 0) {
+      const bufferedEnd = video.buffered.end(video.buffered.length - 1)
+      setBufferedPercent((bufferedEnd / video.duration) * 100)
+    }
+  }
+
   const formatTime = (secs: number) => {
     if (!secs || isNaN(secs)) return '0:00'
     const m = Math.floor(secs / 60)
@@ -611,13 +625,37 @@ export function VideoPlayer({
         </div>
       )}
 
+      {/* Buffering / Loading Spinner */}
+      {(isBuffering || isLoading) && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none gap-3">
+          <div className="relative w-14 h-14">
+            <div className="absolute inset-0 rounded-full border-4 border-white/10" />
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#E50914] animate-spin" />
+          </div>
+          {isLoading && !isBuffering && (
+            <p className="text-white/50 text-xs font-medium tracking-wide">Loading video…</p>
+          )}
+          {isBuffering && (
+            <p className="text-white/50 text-xs font-medium tracking-wide">Buffering…</p>
+          )}
+        </div>
+      )}
+
       {/* Video Element */}
       <video
         ref={videoRef}
         poster={poster ?? undefined}
         className="h-full w-full bg-black object-contain"
         playsInline
+        preload="auto"
+        crossOrigin="anonymous"
         controls={false}
+        onLoadStart={() => setIsLoading(true)}
+        onLoadedData={() => setIsLoading(false)}
+        onCanPlay={() => { setIsLoading(false); setIsBuffering(false) }}
+        onWaiting={() => setIsBuffering(true)}
+        onPlaying={() => { setIsBuffering(false); setIsLoading(false) }}
+        onProgress={handleProgress}
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={e => {
           setDuration(e.currentTarget.duration)
@@ -677,7 +715,14 @@ export function VideoPlayer({
             value={progress}
             onChange={handleSeek}
             className="flex-1 h-1 accent-[#E50914] cursor-pointer"
-            style={{ background: `linear-gradient(to right, #E50914 ${duration ? (progress / duration) * 100 : 0}%, rgba(255,255,255,0.3) 0%)` }}
+            style={{
+              background: `linear-gradient(to right,
+                #E50914 ${duration ? (progress / duration) * 100 : 0}%,
+                rgba(255,255,255,0.35) ${duration ? (progress / duration) * 100 : 0}%,
+                rgba(255,255,255,0.35) ${bufferedPercent}%,
+                rgba(255,255,255,0.12) ${bufferedPercent}%
+              )`
+            }}
           />
           <span className="text-[10px] sm:text-xs text-white/70 tabular-nums w-8 sm:w-10 shrink-0 text-right">{formatTime(duration)}</span>
         </div>

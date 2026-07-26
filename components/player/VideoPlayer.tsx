@@ -261,15 +261,54 @@ export function VideoPlayer({
     hasCounted.current = false
 
     const isHls = src.includes('.m3u8')
-    if (isHls && Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, lowLatencyMode: true })
-      hls.loadSource(src)
-      hls.attachMedia(video)
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) setError('Failed to stream HLS video. The source might be offline or broken.')
-      })
-      return () => hls.destroy()
+
+    if (isHls) {
+      if (Hls.isSupported()) {
+        // PC / Android Chrome — use hls.js
+        const hls = new Hls({ enableWorker: true, lowLatencyMode: true })
+        hls.loadSource(src)
+        hls.attachMedia(video)
+        hls.on(Hls.Events.ERROR, (_event, data) => {
+          if (data.fatal) {
+            // Fatal hls.js error — fall back to native src assignment
+            // (handles cases where the manifest loads but segments fail)
+            hls.destroy()
+            video.src = src
+          }
+        })
+        return () => hls.destroy()
+      } else {
+        // iOS Safari / browsers with native HLS support
+        video.src = src
+        return
+      }
     }
+
+    // Non-HLS source (MP4, WebM, etc.) — check browser support first
+    if (src) {
+      const ext = src.split('?')[0].split('.').pop()?.toLowerCase() ?? ''
+      const mimeMap: Record<string, string> = {
+        mp4:  'video/mp4',
+        webm: 'video/webm',
+        ogg:  'video/ogg',
+        ogv:  'video/ogg',
+        mov:  'video/mp4', // test as mp4 — MOV with H.264 sometimes works
+        mkv:  'video/x-matroska',
+      }
+      const mime = mimeMap[ext]
+      if (mime && mime === 'video/x-matroska') {
+        // MKV is not supported natively in Chrome/Firefox on PC
+        const canPlay = video.canPlayType('video/x-matroska')
+        if (!canPlay || canPlay === '') {
+          setError(
+            'This video is in MKV format which is not supported by your browser on PC. ' +
+            'Try opening on a mobile device, or ask the admin to re-upload as MP4.'
+          )
+          return
+        }
+      }
+    }
+
     video.src = src
   }, [src])
 
@@ -336,8 +375,17 @@ export function VideoPlayer({
         setError(null)
         await video.play()
         setPlaying(true)
-      } catch (err) {
-        setError('Failed to start playback. The link might be broken or the format is unsupported.')
+      } catch (err: any) {
+        if (err?.name === 'NotSupportedError') {
+          setError(
+            'This video format is not supported by your browser. ' +
+            'Try a different browser, or open on a mobile device.'
+          )
+        } else if (err?.name === 'NotAllowedError') {
+          setError('Playback was blocked. Click the play button to start the video.')
+        } else {
+          setError('Failed to start playback. The link might be broken or the format is unsupported.')
+        }
       }
     } else {
       video.pause()

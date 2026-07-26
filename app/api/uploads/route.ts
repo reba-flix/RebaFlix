@@ -9,8 +9,8 @@ import crypto from 'node:crypto'
 const ALLOWED_MIME_TYPES: Record<string, string[]> = {
   posters:   ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'],
   backdrops: ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'],
-  trailers:  ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'],
-  videos:    ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'],
+  trailers:  ['video/mp4', 'video/webm'],
+  videos:    ['video/mp4', 'video/webm'],
   subtitles: ['text/vtt', 'text/plain', 'application/x-subrip'],
 }
 

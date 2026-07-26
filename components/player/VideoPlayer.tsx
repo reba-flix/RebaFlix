@@ -299,7 +299,7 @@ export function VideoPlayer({
       if (mime && mime === 'video/x-matroska') {
         // MKV is not supported natively in Chrome/Firefox on PC
         const canPlay = video.canPlayType('video/x-matroska')
-        if (!canPlay || canPlay === '') {
+        if (!canPlay) {
           setError(
             'This video is in MKV format which is not supported by your browser on PC. ' +
             'Try opening on a mobile device, or ask the admin to re-upload as MP4.'

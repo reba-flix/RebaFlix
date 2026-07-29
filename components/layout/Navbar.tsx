@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 const navLinks = [
   { href: '/', label: 'Home' },
   { href: '/browse', label: 'Browse' },
-  { href: '/browse?type=series', label: 'TV Series' },
+  { href: '/browse?type=series', label: 'Series' },
   { href: '/browse?type=movie', label: 'Movies' },
   { href: '/my-list', label: 'My List' },
 ]

@@ -232,7 +232,7 @@ export default function LoginPage() {
           }}>
             {/* Logo + Title */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
-              <BrandLogo style={{ height: 48, width: 48, flexShrink: 0 }} priority />
+              <BrandLogo className="h-12 w-12 flex-shrink-0" priority />
               <div>
                 <h1 style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.2, margin: 0 }}>
                   Sign in to RebaFlix

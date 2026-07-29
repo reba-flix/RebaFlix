@@ -5,9 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { BrandLogo } from '@/components/brand/BrandLogo'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Loader2, Lock, Mail, User } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 export default function RegisterPage() {
   const supabase = createClient()
@@ -23,9 +21,7 @@ export default function RegisterPage() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.replace('/')
-      }
+      if (session) router.replace('/')
     })
   }, [supabase, router])
 
@@ -65,181 +61,307 @@ export default function RegisterPage() {
   }
 
   return (
-    <main
-      className="relative flex min-h-screen items-center justify-center px-4 pt-20 overflow-hidden"
-    >
-      {/* Cinematic background — layered movie-style imagery */}
-      <div
-        className="absolute inset-0 z-0"
-        style={{
-          background:
-            'linear-gradient(135deg, #0d0d0d 0%, #1a0a0a 25%, #0a0a1a 50%, #0d1a0d 75%, #1a0d00 100%)',
-        }}
-      />
-      {/* Animated gradient orbs simulating movie posters light leaks */}
-      <div
-        className="absolute inset-0 z-0 pointer-events-none"
-        style={{
-          background: `
-            radial-gradient(ellipse 80% 60% at 15% 50%, rgba(229,9,20,0.18) 0%, transparent 70%),
-            radial-gradient(ellipse 60% 80% at 85% 30%, rgba(255,120,0,0.12) 0%, transparent 70%),
-            radial-gradient(ellipse 50% 50% at 50% 90%, rgba(30,30,80,0.35) 0%, transparent 70%)
-          `,
-        }}
-      />
-      {/* Film-strip shimmer lines */}
-      <div
-        className="absolute top-0 left-0 right-0 h-px z-0"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(229,9,20,0.6), transparent)' }}
-      />
-      <div
-        className="absolute bottom-0 left-0 right-0 h-px z-0"
-        style={{ background: 'linear-gradient(90deg, transparent, rgba(229,9,20,0.4), transparent)' }}
-      />
+    <>
+      <style>{`
+        @keyframes blob-drift-1 {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(60px, -40px) scale(1.08); }
+          66% { transform: translate(-30px, 30px) scale(0.95); }
+        }
+        @keyframes blob-drift-2 {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(-50px, 60px) scale(1.05); }
+          66% { transform: translate(40px, -20px) scale(0.97); }
+        }
+        @keyframes blob-drift-3 {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          50% { transform: translate(30px, 50px) scale(1.06); }
+        }
+        @keyframes fade-up {
+          from { opacity: 0; transform: translateY(28px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .cinema-input-r {
+          width: 100%;
+          padding: 14px 18px;
+          background: rgba(255,255,255,0.06);
+          border: 1px solid rgba(255,255,255,0.13);
+          border-radius: 12px;
+          color: #fff;
+          font-size: 15px;
+          font-family: inherit;
+          outline: none;
+          transition: border-color 0.25s, background 0.25s, box-shadow 0.25s;
+          backdrop-filter: blur(4px);
+          box-sizing: border-box;
+        }
+        .cinema-input-r::placeholder { color: rgba(255,255,255,0.35); }
+        .cinema-input-r:focus {
+          border-color: rgba(229,9,20,0.7);
+          background: rgba(255,255,255,0.1);
+          box-shadow: 0 0 0 3px rgba(229,9,20,0.15), inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+        .glass-card-r {
+          animation: fade-up 0.6s cubic-bezier(0.22,1,0.36,1) both;
+        }
+        .sign-btn-r {
+          width: 100%;
+          padding: 14px;
+          border-radius: 12px;
+          border: none;
+          background: linear-gradient(135deg, #e50914 0%, #b20710 100%);
+          color: #fff;
+          font-size: 15px;
+          font-weight: 700;
+          letter-spacing: 0.03em;
+          cursor: pointer;
+          transition: transform 0.18s, box-shadow 0.18s, opacity 0.18s;
+          box-shadow: 0 4px 24px rgba(229,9,20,0.4), 0 1px 0 rgba(255,255,255,0.1) inset;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+        .sign-btn-r:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 8px 32px rgba(229,9,20,0.55), 0 1px 0 rgba(255,255,255,0.1) inset;
+        }
+        .sign-btn-r:active:not(:disabled) { transform: translateY(0px); }
+        .sign-btn-r:disabled { opacity: 0.7; cursor: not-allowed; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
 
-      {/* Scrolling movie title bars in background */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none opacity-[0.07]">
-        {[
-          'ACTION  •  DRAMA  •  THRILLER  •  ROMANCE  •  COMEDY  •  HORROR  •  SCI-FI  •  DOCUMENTARY',
-          'TRENDING  •  NEW RELEASES  •  TOP RATED  •  ORIGINALS  •  LIVE TV  •  4K  •  SERIES',
-          'ACTION  •  DRAMA  •  THRILLER  •  ROMANCE  •  COMEDY  •  HORROR  •  SCI-FI  •  DOCUMENTARY',
-          'TRENDING  •  NEW RELEASES  •  TOP RATED  •  ORIGINALS  •  LIVE TV  •  4K  •  SERIES',
-        ].map((text, i) => (
-          <div
-            key={i}
-            className="absolute whitespace-nowrap text-white font-black tracking-[0.3em] text-sm"
-            style={{
-              top: `${15 + i * 22}%`,
-              animation: `marquee-${i % 2 === 0 ? 'left' : 'right'} ${22 + i * 4}s linear infinite`,
-              left: i % 2 === 0 ? '0' : undefined,
-              right: i % 2 !== 0 ? '0' : undefined,
-            }}
-          >
-            {text} &nbsp;&nbsp;&nbsp; {text} &nbsp;&nbsp;&nbsp; {text}
-          </div>
-        ))}
+      {/* ── Cinematic Background ── */}
+      <div
+        aria-hidden
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 0,
+          overflow: 'hidden',
+          background: 'radial-gradient(ellipse at 50% 0%, #1a0505 0%, #0d0d0d 60%, #000 100%)',
+        }}
+      >
+        {/* Blob 1 – crimson */}
+        <div style={{
+          position: 'absolute',
+          top: '-10%', left: '-5%',
+          width: '55vw', height: '55vw',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(229,9,20,0.55) 0%, rgba(183,0,10,0.2) 45%, transparent 70%)',
+          filter: 'blur(90px)',
+          animation: 'blob-drift-1 18s ease-in-out infinite',
+        }} />
+
+        {/* Blob 2 – deep amber */}
+        <div style={{
+          position: 'absolute',
+          top: '40%', right: '-10%',
+          width: '45vw', height: '45vw',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(255,140,0,0.35) 0%, rgba(200,80,0,0.15) 50%, transparent 70%)',
+          filter: 'blur(80px)',
+          animation: 'blob-drift-2 22s ease-in-out infinite',
+        }} />
+
+        {/* Blob 3 – midnight violet */}
+        <div style={{
+          position: 'absolute',
+          bottom: '-15%', left: '30%',
+          width: '50vw', height: '40vw',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(80,40,180,0.45) 0%, rgba(40,10,100,0.2) 50%, transparent 70%)',
+          filter: 'blur(100px)',
+          animation: 'blob-drift-3 26s ease-in-out infinite',
+        }} />
+
+        {/* Blob 4 – teal */}
+        <div style={{
+          position: 'absolute',
+          top: '20%', left: '55%',
+          width: '30vw', height: '30vw',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(0,180,160,0.2) 0%, transparent 70%)',
+          filter: 'blur(70px)',
+          animation: 'blob-drift-1 30s ease-in-out infinite reverse',
+        }} />
+
+        {/* Dark vignette */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: 'radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.65) 100%)',
+        }} />
+
+        {/* Subtle grid */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `
+            linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)
+          `,
+          backgroundSize: '60px 60px',
+          maskImage: 'radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%)',
+          WebkitMaskImage: 'radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%)',
+        }} />
       </div>
 
-      {/* Card */}
-      <section className="relative z-10 w-full max-w-md space-y-4">
-        <div
-          className="rounded-2xl border border-white/10 p-7 backdrop-blur-xl"
-          style={{
-            background: 'rgba(14, 14, 14, 0.72)',
-            boxShadow: '0 0 0 1px rgba(229,9,20,0.08), 0 25px 50px rgba(0,0,0,0.7)',
-          }}
-        >
-          <div className="mb-6 flex items-center gap-3">
-            <BrandLogo className="h-12 w-12 flex-shrink-0" priority />
-            <h1 className="font-display text-2xl font-black">Create your account</h1>
+      {/* ── Page ── */}
+      <main style={{
+        position: 'relative', zIndex: 10,
+        display: 'flex', minHeight: '100vh',
+        alignItems: 'center', justifyContent: 'center',
+        padding: '96px 16px 32px',
+      }}>
+        <section style={{ width: '100%', maxWidth: 420 }} className="glass-card-r">
+
+          {/* Glass card */}
+          <div style={{
+            borderRadius: 24,
+            border: '1px solid rgba(255,255,255,0.14)',
+            background: 'rgba(255,255,255,0.07)',
+            backdropFilter: 'blur(32px)',
+            WebkitBackdropFilter: 'blur(32px)',
+            padding: '36px 32px 32px',
+            boxShadow: `
+              0 0 0 1px rgba(255,255,255,0.05) inset,
+              0 1px 0 rgba(255,255,255,0.12) inset,
+              0 32px 80px rgba(0,0,0,0.6),
+              0 0 60px rgba(229,9,20,0.08)
+            `,
+          }}>
+            {/* Logo + Title */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
+              <BrandLogo style={{ height: 48, width: 48, flexShrink: 0 }} priority />
+              <div>
+                <h1 style={{ fontSize: 22, fontWeight: 800, color: '#fff', lineHeight: 1.2, margin: 0 }}>
+                  Create your account
+                </h1>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', margin: '3px 0 0' }}>
+                  Join RebaFlix — stream without limits
+                </p>
+              </div>
+            </div>
+
+            <form
+              style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+              onSubmit={async (e) => { e.preventDefault(); await signUpWithPassword() }}
+            >
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 7, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Full name
+                </label>
+                <input
+                  id="register-name"
+                  type="text"
+                  className="cinema-input-r"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  autoComplete="name"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 7, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Email address
+                </label>
+                <input
+                  id="register-email"
+                  type="email"
+                  required
+                  className="cinema-input-r"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 7, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Password
+                </label>
+                <input
+                  id="register-password"
+                  type="password"
+                  required
+                  minLength={6}
+                  className="cinema-input-r"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'rgba(255,255,255,0.5)', marginBottom: 7, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                  Confirm password
+                </label>
+                <input
+                  id="register-confirm-password"
+                  type="password"
+                  required
+                  minLength={6}
+                  className="cinema-input-r"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  autoComplete="new-password"
+                />
+              </div>
+
+              {error && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: 10,
+                  background: 'rgba(229,9,20,0.12)', border: '1px solid rgba(229,9,20,0.3)',
+                  color: '#fca5a5', fontSize: 13,
+                }}>
+                  {error}
+                </div>
+              )}
+
+              {message && (
+                <div style={{
+                  padding: '10px 14px', borderRadius: 10,
+                  background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.3)',
+                  color: '#6ee7b7', fontSize: 13,
+                }}>
+                  {message}
+                </div>
+              )}
+
+              <button id="register-submit" type="submit" disabled={loading} className="sign-btn-r" style={{ marginTop: 4 }}>
+                {loading ? (
+                  <>
+                    <Loader2 style={{ width: 17, height: 17, animation: 'spin 1s linear infinite' }} />
+                    Creating account…
+                  </>
+                ) : 'Create account'}
+              </button>
+            </form>
           </div>
 
-          <form
-            className="space-y-3"
-            onSubmit={async (e) => {
-              e.preventDefault()
-              await signUpWithPassword()
-            }}
-          >
-            <div className="relative">
-              <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-              <Input
-                id="register-name"
-                type="text"
-                className="pl-9"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-              />
-            </div>
-
-            <div className="relative">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-              <Input
-                id="register-email"
-                type="email"
-                required
-                className="pl-9"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email address"
-              />
-            </div>
-
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-              <Input
-                id="register-password"
-                type="password"
-                required
-                minLength={6}
-                className="pl-9"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Password"
-              />
-            </div>
-
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-              <Input
-                id="register-confirm-password"
-                type="password"
-                required
-                minLength={6}
-                className="pl-9"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="Confirm password"
-              />
-            </div>
-
-            {error ? (
-              <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                {error}
-              </p>
-            ) : null}
-
-            {message ? (
-              <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
-                {message}
-              </p>
-            ) : null}
-
-            <Button id="register-submit" className="w-full" type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating account...
-                </>
-              ) : (
-                'Sign up'
-              )}
-            </Button>
-          </form>
-        </div>
-
-        <div
-          className="rounded-xl border border-white/10 px-5 py-4 text-center text-sm text-white/65 backdrop-blur-xl"
-          style={{ background: 'rgba(14, 14, 14, 0.55)' }}
-        >
-          Already have an account?{' '}
-          <Link href="/login" className="font-semibold text-primary-300 transition-colors hover:text-primary-200">
-            Sign in
-          </Link>
-        </div>
-      </section>
-
-      <style jsx>{`
-        @keyframes marquee-left {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(-50%); }
-        }
-        @keyframes marquee-right {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0); }
-        }
-      `}</style>
-    </main>
+          {/* Bottom link */}
+          <div style={{
+            marginTop: 14,
+            borderRadius: 16,
+            border: '1px solid rgba(255,255,255,0.1)',
+            background: 'rgba(255,255,255,0.04)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            padding: '16px 20px',
+            textAlign: 'center',
+            fontSize: 14,
+            color: 'rgba(255,255,255,0.55)',
+          }}>
+            Already have an account?{' '}
+            <Link href="/login" style={{ color: '#e50914', fontWeight: 700, textDecoration: 'none' }}>
+              Sign in
+            </Link>
+          </div>
+        </section>
+      </main>
+    </>
   )
 }

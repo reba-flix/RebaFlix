@@ -103,6 +103,13 @@ export default function RegisterPage() {
           background: rgba(255,255,255,0.1);
           box-shadow: 0 0 0 3px rgba(229,9,20,0.15), inset 0 1px 0 rgba(255,255,255,0.08);
         }
+        .cinema-input-r:-webkit-autofill,
+        .cinema-input-r:-webkit-autofill:hover, 
+        .cinema-input-r:-webkit-autofill:focus, 
+        .cinema-input-r:-webkit-autofill:active {
+          transition: background-color 5000s ease-in-out 0s;
+          -webkit-text-fill-color: #fff !important;
+        }
         .glass-card-r {
           animation: fade-up 0.6s cubic-bezier(0.22,1,0.36,1) both;
         }

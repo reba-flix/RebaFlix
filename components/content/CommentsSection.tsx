@@ -171,7 +171,7 @@ export function CommentsSection({
           <Loader2 className="w-8 h-8 text-[#E50914] animate-spin" />
         </div>
       ) : comments.length > 0 ? (
-        <div className="space-y-6">
+        <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           {comments.map((comment) => (
             <div
               key={comment.id}

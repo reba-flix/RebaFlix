@@ -31,7 +31,7 @@ export default async function AdminPage() {
     { label: 'Active Users', value: users, icon: Users, trend: '+4%', up: true, href: '/admin/users' },
     { label: 'Total Series', value: seriesCount, icon: Tv, trend: '+5%', up: true, href: '/admin/series' },
     { label: 'Total Views', value: totalViews.toLocaleString(), icon: Eye, trend: '+8%', up: true, href: '/admin/analytics' },
-    { label: 'Site Visits', value: siteVisits.toLocaleString(), icon: MousePointerClick, trend: `${visitsToday.toLocaleString()} today`, up: true, href: '/admin/analytics' },
+    { label: 'Site Visits', value: siteVisits.toLocaleString(), icon: MousePointerClick, trend: `${visitsToday.toLocaleString()} today`, up: true, href: '/admin/site-visits' },
     { label: 'Revenue', value: `$${((payments._sum.amountCents ?? 0) / 100).toLocaleString()}`, icon: CreditCard, trend: '+24%', up: true, href: '/admin/revenue' },
   ]
 

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { BarChart3, Clapperboard, CreditCard, Radio, Settings, Users, ArrowUpRight, ArrowDownRight, Upload, Play, ShieldAlert, Activity, Eye, MousePointerClick } from 'lucide-react'
+import { BarChart3, Clapperboard, CreditCard, Radio, Settings, Users, ArrowUpRight, ArrowDownRight, Upload, Play, ShieldAlert, Activity, Eye, MousePointerClick, Tv } from 'lucide-react'
 import { getSessionUser, hasRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import Link from 'next/link'
@@ -13,10 +13,10 @@ export default async function AdminPage() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const [movies, users, channels, payments, movieViews, seriesViews, siteVisits, visitsToday] = await Promise.all([
+  const [movies, users, seriesCount, payments, movieViews, seriesViews, siteVisits, visitsToday] = await Promise.all([
     prisma.movie.count(),
     prisma.user.count(),
-    prisma.liveChannel.count(),
+    prisma.series.count(),
     prisma.payment.aggregate({ _sum: { amountCents: true } }),
     prisma.movie.aggregate({ _sum: { viewCount: true } }),
     prisma.series.aggregate({ _sum: { viewCount: true } }),
@@ -29,7 +29,7 @@ export default async function AdminPage() {
   const stats = [
     { label: 'Total Movies', value: movies, icon: Clapperboard, trend: '+12%', up: true, href: '/admin/movies' },
     { label: 'Active Users', value: users, icon: Users, trend: '+4%', up: true, href: '/admin/users' },
-    { label: 'Live Channels', value: channels, icon: Radio, trend: '0%', up: true, href: '/admin/channels' },
+    { label: 'Total Series', value: seriesCount, icon: Tv, trend: '+5%', up: true, href: '/admin/series' },
     { label: 'Total Views', value: totalViews.toLocaleString(), icon: Eye, trend: '+8%', up: true, href: '/admin/analytics' },
     { label: 'Site Visits', value: siteVisits.toLocaleString(), icon: MousePointerClick, trend: `${visitsToday.toLocaleString()} today`, up: true, href: '/admin/analytics' },
     { label: 'Revenue', value: `$${((payments._sum.amountCents ?? 0) / 100).toLocaleString()}`, icon: CreditCard, trend: '+24%', up: true, href: '/admin/revenue' },
@@ -92,17 +92,17 @@ export default async function AdminPage() {
           <h2 className="text-lg font-semibold text-white/90">Quick Actions</h2>
           <div className="grid gap-3">
             {[
-              { label: 'Manage Users & Roles', icon: Users, color: 'text-blue-400', bg: 'bg-blue-400/10' },
-              { label: 'Site Settings & Config', icon: Settings, color: 'text-purple-400', bg: 'bg-purple-400/10' },
-              { label: 'Review Reported Comments', icon: ShieldAlert, color: 'text-orange-400', bg: 'bg-orange-400/10' },
-              { label: 'Broadcast Live Event', icon: Play, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+              { label: 'Manage Users & Roles', icon: Users, color: 'text-blue-400', bg: 'bg-blue-400/10', href: '/admin/users' },
+              { label: 'Site Settings & Config', icon: Settings, color: 'text-purple-400', bg: 'bg-purple-400/10', href: '/admin/settings' },
+              { label: 'System Logs & Analytics', icon: Activity, color: 'text-orange-400', bg: 'bg-orange-400/10', href: '/admin/logs' },
+              { label: 'Revenue Overview', icon: CreditCard, color: 'text-emerald-400', bg: 'bg-emerald-400/10', href: '/admin/revenue' },
             ].map((action, i) => (
-              <button key={i} className="flex items-center gap-4 p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.06] transition-colors text-left group">
+              <Link href={action.href} key={i} className="flex items-center gap-4 p-4 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.06] transition-colors text-left group">
                 <div className={`p-3 rounded-lg ${action.bg} ${action.color} group-hover:scale-110 transition-transform`}>
                   <action.icon className="w-5 h-5" />
                 </div>
                 <span className="font-medium text-white/80 group-hover:text-white text-sm">{action.label}</span>
-              </button>
+              </Link>
             ))}
           </div>
         </section>
@@ -126,9 +126,9 @@ export default async function AdminPage() {
                 </div>
               ))}
             </div>
-            <button className="w-full p-3 text-xs font-medium text-white/50 hover:text-white bg-white/[0.02] hover:bg-white/[0.05] transition-colors border-t border-white/5">
+            <Link href="/admin/logs" className="block text-center w-full p-3 text-xs font-medium text-white/50 hover:text-white bg-white/[0.02] hover:bg-white/[0.05] transition-colors border-t border-white/5">
               View All Activity
-            </button>
+            </Link>
           </div>
         </section>
       </div>

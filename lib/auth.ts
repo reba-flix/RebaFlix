@@ -1,16 +1,17 @@
 import { NextResponse } from 'next/server'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/lib/supabase/server'
+import { env } from '@/lib/env'
 import { prisma } from '@/lib/prisma'
 
-export async function getSessionUser() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+async function syncSupabaseUser(user: {
+  id: string
+  email?: string | null
+  user_metadata?: { name?: string; full_name?: string; avatar_url?: string }
+}) {
+  if (!user.email) return null
 
-  if (!user?.email) return null
-
-  const profile = await prisma.user.upsert({
+  return prisma.user.upsert({
     where: { email: user.email },
     update: {
       id: user.id, // keep Prisma UUID in sync with Supabase auth UUID
@@ -31,12 +32,37 @@ export async function getSessionUser() {
       },
     },
   })
-
-  return profile
 }
 
-export async function requireUser() {
-  const user = await getSessionUser()
+export async function getSessionUser() {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user?.email) return null
+  return syncSupabaseUser(user)
+}
+
+export async function getBearerUser(request: Request) {
+  const authHeader = request.headers.get('authorization')
+  const token = authHeader?.match(/^Bearer\s+(.+)$/i)?.[1]
+  if (!token) return null
+
+  const supabase = createSupabaseClient(env.supabaseUrl, env.supabasePublishableKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token)
+
+  if (error || !user?.email) return null
+  return syncSupabaseUser(user)
+}
+
+export async function requireUser(request?: Request) {
+  const user = (request ? await getBearerUser(request) : null) ?? await getSessionUser()
   if (!user) {
     return {
       user: null,

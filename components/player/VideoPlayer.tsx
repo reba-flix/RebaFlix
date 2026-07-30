@@ -83,7 +83,7 @@ export function VideoPlayer({
   const [speed, setSpeed] = useState(1)
   const [error, setError] = useState<string | null>(null)
   const [volume, setVolume] = useState(1)
-  const [muted, setMuted] = useState(false)
+  const [muted, setMuted] = useState(true)
   const [showVolumeSlider, setShowVolumeSlider] = useState(false)
   const [showEpisodes, setShowEpisodes] = useState(false)
   const [activeSeason, setActiveSeason] = useState<string>(seasons?.[0]?.id ?? '')
@@ -96,6 +96,7 @@ export function VideoPlayer({
   const [bufferedPercent, setBufferedPercent] = useState(0)
   const countdownTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const hasCounted = useRef(false)
+  const autoPlayAttempted = useRef(false)
   const playlistLabel = contentType === 'movie' ? 'Parts' : 'Episodes'
 
   const [showControls, setShowControls] = useState(true)
@@ -265,6 +266,7 @@ export function VideoPlayer({
     setIsBuffering(false)
     setBufferedPercent(0)
     hasCounted.current = false
+    autoPlayAttempted.current = false
 
     const isHls = src.includes('.m3u8')
 
@@ -646,13 +648,25 @@ export function VideoPlayer({
         ref={videoRef}
         poster={poster ?? undefined}
         className="h-full w-full bg-black object-contain"
+        autoPlay
         playsInline
         preload="auto"
         crossOrigin="anonymous"
         controls={false}
         onLoadStart={() => setIsLoading(true)}
         onLoadedData={() => setIsLoading(false)}
-        onCanPlay={() => { setIsLoading(false); setIsBuffering(false) }}
+        onCanPlay={() => {
+          setIsLoading(false)
+          setIsBuffering(false)
+          // Attempt autoplay on first canPlay event
+          const video = videoRef.current
+          if (video && !autoPlayAttempted.current) {
+            autoPlayAttempted.current = true
+            video.play().catch(() => {
+              // Autoplay blocked even when muted — user must click play
+            })
+          }
+        }}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => { setIsBuffering(false); setIsLoading(false) }}
         onProgress={handleProgress}
@@ -661,7 +675,12 @@ export function VideoPlayer({
           setDuration(e.currentTarget.duration)
           resumeFromSaved()
         }}
-        onPlay={() => { setPlaying(true); recordPlay() }}
+        onPlay={() => {
+          setPlaying(true)
+          recordPlay()
+          // Unmute after first successful autoplay so user hears audio
+          setMuted(false)
+        }}
         onPause={() => {
           setPlaying(false)
           const video = videoRef.current

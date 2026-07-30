@@ -161,27 +161,27 @@ export function EpisodeRow({ episode }: Props) {
   }
 
   return (
-    <div className="p-4 hover:bg-white/[0.04] transition-colors border-b border-white/5 last:border-0 group">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-3 mb-1.5">
-            <span className="text-xs font-bold bg-white/10 text-white/80 px-2.5 py-1 rounded-md">
+    <div className="p-4 hover:bg-white/[0.02] transition-colors border-b border-white/5 last:border-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
+            <span className="text-xs font-bold bg-white/10 text-white/70 px-2 py-0.5 rounded">
               EP {episode.number}
             </span>
-            <span className="font-semibold text-white/90 text-base">
+            <span className="font-medium text-white/90">
               {episode.title}
             </span>
             {episode.published ? (
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20">Published</span>
+              <span className="text-xs bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">Published</span>
             ) : (
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full border border-amber-500/20">Draft</span>
+              <span className="text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full">Draft</span>
             )}
           </div>
-          <div className="text-xs text-white/40 truncate max-w-lg font-mono bg-black/20 px-2 py-1 rounded inline-block">
-            {episode.videoUrl || 'No video URL provided'}
+          <div className="text-xs text-white/40 truncate max-w-sm">
+            {episode.videoUrl}
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-2 shrink-0">
           {episode.videoUrl && (
             <Button variant="outline" size="sm" asChild className="bg-transparent border-white/20 text-white hover:bg-white/10">
               <Link href={`/watch/${episode.id}`} target="_blank">
@@ -189,14 +189,14 @@ export function EpisodeRow({ episode }: Props) {
               </Link>
             </Button>
           )}
-          <Button type="button" variant="ghost" size="icon-sm" onClick={() => setEditing(true)} title="Edit episode" className="hover:bg-blue-500/10 hover:text-blue-400 text-white/70">
+          <Button type="button" variant="ghost" size="icon-sm" onClick={() => setEditing(true)} title="Edit episode">
             <Pencil className="h-4 w-4" />
           </Button>
           <Button
             type="button"
             variant="ghost"
             size="icon-sm"
-            className="text-white/70 hover:bg-red-500/10 hover:text-red-400"
+            className="text-red-400 hover:bg-red-500/10 hover:text-red-300"
             onClick={() => setConfirmingDelete(true)}
             title="Delete episode"
           >
@@ -206,18 +206,18 @@ export function EpisodeRow({ episode }: Props) {
       </div>
 
       {confirmingDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#121212] p-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-white mb-2">Delete Episode</h3>
-            <p className="text-sm text-white/60 mb-6 leading-relaxed">
-              Are you sure you want to delete <span className="text-white font-medium">"{episode.title}"</span>? This action cannot be undone.
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-xl border border-white/10 bg-[#1a1a1a] p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-2">Delete Episode</h3>
+            <p className="text-sm text-white/60 mb-6">
+              Delete "{episode.title}" from this series? This cannot be undone.
             </p>
-            {error && <div className="mb-6 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">{error}</div>}
+            {error && <div className="mb-4 rounded-md border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-300">{error}</div>}
             <div className="flex gap-3">
-              <Button type="button" variant="ghost" className="flex-1 border border-white/10 hover:bg-white/5" onClick={() => setConfirmingDelete(false)} disabled={loading}>
+              <Button type="button" variant="ghost" className="flex-1" onClick={() => setConfirmingDelete(false)} disabled={loading}>
                 Cancel
               </Button>
-              <Button type="button" className="flex-1 bg-red-600 text-white hover:bg-red-700 shadow-lg shadow-red-900/20" onClick={handleDelete} disabled={loading}>
+              <Button type="button" className="flex-1 bg-red-600 text-white hover:bg-red-700" onClick={handleDelete} disabled={loading}>
                 {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Trash2 className="h-4 w-4 mr-2" />}
                 Delete
               </Button>
@@ -232,7 +232,7 @@ export function EpisodeRow({ episode }: Props) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 block text-xs font-semibold uppercase tracking-wider text-white/50">{label}</span>
+      <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-white/50">{label}</span>
       {children}
     </label>
   )

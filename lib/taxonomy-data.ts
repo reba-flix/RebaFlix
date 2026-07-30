@@ -10,6 +10,16 @@ export const defaultGenres = [
   'Hindi',
   'Rwandan Movies',
   'Kids',
+  'Science Fiction',
+  'Fantasy',
+  'Romance',
+  'Animation',
+  'Family',
+  'Musical',
+  'Biography',
+  'Historical',
+  'Sports',
+  'Superhero',
 ]
 
 export function slugifyTaxonomyName(name: string) {

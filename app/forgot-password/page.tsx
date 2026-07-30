@@ -6,72 +6,68 @@ import { createClient } from '@/lib/supabase/client'
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2, Mail, Lock, KeyRound, ArrowLeft } from 'lucide-react'
+import { Loader2, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { useToast } from '@/hooks/use-toast'
+import { motion } from 'framer-motion'
 
 export default function ForgotPasswordPage() {
   const supabase = createClient()
+  const { toast } = useToast()
   
-  const [step, setStep] = useState<'email' | 'otp'>('email')
   const [email, setEmail] = useState('')
-  const [otp, setOtp] = useState('')
-  const [password, setPassword] = useState('')
-  
-  const [message, setMessage] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [isSent, setIsSent] = useState(false)
 
-  async function handleSendOtp(e: React.FormEvent) {
+  async function handleSendResetLink(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setMessage(null)
+    
+    if (!email || !email.includes('@')) {
+      toast({
+        title: "Invalid Email",
+        description: "Please enter a valid email address.",
+        variant: "destructive"
+      })
+      return
+    }
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email)
+    setLoading(true)
+
+    // Determine the base URL for the redirect
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+                    (typeof window !== 'undefined' ? window.location.origin : 'https://rebaaflix.com')
+    const redirectTo = `${siteUrl}/reset-password`
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
+    })
 
     setLoading(false)
+
     if (error) {
-      setError(error.message)
+      console.error("Supabase Reset Error:", error)
+      let errorMessage = "Failed to send reset link. Please try again later."
+      
+      if (error.message.includes('over_email_send_rate_limit') || error.status === 429) {
+        errorMessage = "Too many requests. Please try again later."
+      } else if (error.message.includes('not found') || error.status === 404) {
+        errorMessage = "Email not found."
+      } else if (error.message.includes('Network')) {
+        errorMessage = "Network error. Please check your connection."
+      }
+
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive"
+      })
       return
     }
 
-    setStep('otp')
-    setMessage('Verification code sent to your email.')
-  }
-
-  async function handleVerifyAndReset(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
-    setMessage(null)
-
-    // First verify the OTP
-    const { error: verifyError } = await supabase.auth.verifyOtp({
-      email,
-      token: otp,
-      type: 'recovery'
+    setIsSent(true)
+    toast({
+      title: "Success",
+      description: "Password reset email sent.",
     })
-
-    if (verifyError) {
-      setLoading(false)
-      setError(verifyError.message)
-      return
-    }
-
-    // Now update the user's password
-    const { error: updateError } = await supabase.auth.updateUser({
-      password: password
-    })
-
-    setLoading(false)
-    if (updateError) {
-      setError(updateError.message)
-      return
-    }
-
-    setMessage('Password successfully reset! Redirecting to login...')
-    setTimeout(() => {
-      window.location.assign('/login')
-    }, 2000)
   }
 
   return (
@@ -83,10 +79,15 @@ export default function ForgotPasswordPage() {
             <h1 className="font-display text-2xl font-black">Reset Password</h1>
           </div>
 
-          {step === 'email' ? (
-            <form onSubmit={handleSendOtp} className="space-y-4">
+          {!isSent ? (
+            <motion.form 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              onSubmit={handleSendResetLink} 
+              className="space-y-4"
+            >
               <p className="text-sm text-white/60 mb-2">
-                Enter your email address and we'll send you a 6-digit code to reset your password.
+                Enter your email address and we'll send you a link to reset your password.
               </p>
               
               <div className="relative">
@@ -98,73 +99,39 @@ export default function ForgotPasswordPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Email address"
+                  disabled={loading}
                 />
               </div>
-
-              {error && (
-                <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-                  {error}
-                </p>
-              )}
-              {message && (
-                <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
-                  {message}
-                </p>
-              )}
 
               <Button className="w-full" type="submit" disabled={loading || !email}>
                 {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Send Reset Code
+                Send Reset Link
               </Button>
-            </form>
+            </motion.form>
           ) : (
-            <form onSubmit={handleVerifyAndReset} className="space-y-4">
-              <p className="text-sm text-white/60 mb-2">
-                Enter the 6-digit code sent to <strong>{email}</strong> and your new password.
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="space-y-4 text-center py-4"
+            >
+              <div className="flex justify-center mb-4">
+                <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                  <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                </div>
+              </div>
+              <h2 className="text-xl font-semibold">Check your email</h2>
+              <p className="text-sm text-white/60">
+                We've sent password reset instructions to <br/>
+                <span className="text-white font-medium">{email}</span>
               </p>
-
-              <div className="relative">
-                <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                <Input
-                  type="text"
-                  required
-                  className="pl-9 tracking-widest text-lg font-medium"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  placeholder="000000"
-                  maxLength={6}
-                />
-              </div>
-
-              <div className="relative mt-3">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                <Input
-                  type="password"
-                  required
-                  className="pl-9"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="New password"
-                  minLength={6}
-                />
-              </div>
-
-              {error && (
-                <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300 mt-2">
-                  {error}
-                </p>
-              )}
-              {message && (
-                <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300 mt-2">
-                  {message}
-                </p>
-              )}
-
-              <Button className="w-full mt-4" type="submit" disabled={loading || !otp || !password}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Reset Password
+              <Button 
+                variant="outline" 
+                className="w-full mt-4 bg-white/5 border-white/10 hover:bg-white/10"
+                onClick={() => setIsSent(false)}
+              >
+                Try another email
               </Button>
-            </form>
+            </motion.div>
           )}
           
           <div className="mt-6 flex justify-center">
@@ -178,3 +145,4 @@ export default function ForgotPasswordPage() {
     </main>
   )
 }
+

@@ -89,16 +89,30 @@ export function getUserNotifications(userId: string) {
   })
 }
 
-export function getComments(target: { movieId?: string; seriesId?: string }) {
-  return prisma.comment.findMany({
-    where: target,
-    include: { user: { select: { id: true, name: true, avatarUrl: true } } },
-    orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
-    take: 100,
-  })
+export async function getComments(target: { movieId?: string; seriesId?: string }, page = 1, limit = 10) {
+  const where = { ...target, parentId: null }
+  
+  const [comments, totalCount] = await Promise.all([
+    prisma.comment.findMany({
+      where,
+      include: {
+        user: { select: { id: true, name: true, avatarUrl: true } },
+        replies: {
+          include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+      orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.comment.count({ where }),
+  ])
+
+  return { comments, totalCount }
 }
 
-export function createComment(userId: string, data: { movieId?: string; seriesId?: string; body: string }) {
+export function createComment(userId: string, data: { movieId?: string; seriesId?: string; parentId?: string; body: string }) {
   return prisma.comment.create({
     data: { userId, ...data },
     include: { user: { select: { id: true, name: true, avatarUrl: true } } },

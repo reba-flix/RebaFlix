@@ -11,13 +11,21 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const movieId = searchParams.get('movieId') ?? undefined
   const seriesId = searchParams.get('seriesId') ?? undefined
+  const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10))
+  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') ?? '10', 10)))
 
   if (!movieId && !seriesId) {
     return NextResponse.json({ error: 'movieId or seriesId is required' }, { status: 400 })
   }
 
-  const comments = await getComments({ movieId, seriesId })
-  return NextResponse.json(comments)
+  const { comments, totalCount } = await getComments({ movieId, seriesId }, page, limit)
+  return NextResponse.json({
+    comments,
+    totalCount,
+    page,
+    limit,
+    hasMore: page * limit < totalCount,
+  })
 }
 
 export async function POST(request: NextRequest) {

@@ -29,5 +29,6 @@ export const ratingSchema = z.object({
 export const commentSchema = z.object({
   movieId: z.string().min(1).optional(),
   seriesId: z.string().min(1).optional(),
+  parentId: z.string().min(1).optional(),
   body: z.string().min(1).max(2000),
 })

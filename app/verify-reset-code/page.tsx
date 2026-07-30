@@ -17,7 +17,7 @@ function VerifyOTPContent() {
   const searchParams = useSearchParams()
   const email = searchParams.get('email')
 
-  const [otp, setOtp] = useState(['', '', '', '', '', ''])
+  const [otp, setOtp] = useState(['', '', '', '', '', '', '', ''])
   const [loading, setLoading] = useState(false)
   const [resendLoading, setResendLoading] = useState(false)
   const [timeLeft, setTimeLeft] = useState(60)
@@ -44,7 +44,7 @@ function VerifyOTPContent() {
     newOtp[index] = value.substring(value.length - 1)
     setOtp(newOtp)
 
-    if (value && index < 5 && inputRefs.current[index + 1]) {
+    if (value && index < 7 && inputRefs.current[index + 1]) {
       inputRefs.current[index + 1]?.focus()
     }
   }
@@ -57,16 +57,16 @@ function VerifyOTPContent() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault()
-    const pastedData = e.clipboardData.getData('text').slice(0, 6).split('')
+    const pastedData = e.clipboardData.getData('text').slice(0, 8).split('')
     if (pastedData.some(char => isNaN(Number(char)))) return
 
     const newOtp = [...otp]
     pastedData.forEach((char, index) => {
-      if (index < 6) newOtp[index] = char
+      if (index < 8) newOtp[index] = char
     })
     setOtp(newOtp)
 
-    const focusIndex = Math.min(pastedData.length, 5)
+    const focusIndex = Math.min(pastedData.length, 7)
     inputRefs.current[focusIndex]?.focus()
   }
 
@@ -74,10 +74,10 @@ function VerifyOTPContent() {
     e.preventDefault()
     const code = otp.join('')
     
-    if (code.length < 6) {
+    if (code.length < 8) {
       toast({
         title: "Incomplete Code",
-        description: "Please enter all 6 digits.",
+        description: "Please enter all 8 digits.",
         variant: "destructive"
       })
       return
@@ -110,7 +110,7 @@ function VerifyOTPContent() {
       })
       
       // Clear OTP on error
-      setOtp(['', '', '', '', '', ''])
+      setOtp(['', '', '', '', '', '', '', ''])
       inputRefs.current[0]?.focus()
       return
     }
@@ -176,7 +176,7 @@ function VerifyOTPContent() {
           
           <div className="space-y-3">
             <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
-              Enter 6-digit code
+              Enter 8-digit verification code
             </label>
             <div className="flex justify-between gap-2" onPaste={handlePaste}>
               {otp.map((digit, index) => (
@@ -191,13 +191,13 @@ function VerifyOTPContent() {
                   onChange={e => handleChange(index, e.target.value)}
                   onKeyDown={e => handleKeyDown(index, e)}
                   disabled={loading}
-                  className="w-12 h-14 text-center text-xl font-bold rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 outline-none transition-all"
+                  className="w-10 h-12 text-center text-lg font-bold rounded-lg border border-white/10 bg-white/5 text-white focus:bg-white/10 focus:border-red-500/50 focus:ring-2 focus:ring-red-500/20 outline-none transition-all"
                 />
               ))}
             </div>
           </div>
 
-          <Button className="w-full h-12 text-base font-semibold" type="submit" disabled={loading || otp.join('').length < 6}>
+          <Button className="w-full h-12 text-base font-semibold" type="submit" disabled={loading || otp.join('').length < 8}>
             {loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
             Verify Code
           </Button>

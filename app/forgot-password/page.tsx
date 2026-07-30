@@ -61,7 +61,7 @@ export default function ForgotPasswordPage() {
 
     toast({
       title: "Code Sent",
-      description: "A 6-digit verification code has been sent to your email.",
+      description: "An 8-digit verification code has been sent to your email.",
     })
     
     // Redirect to the OTP verification page with the email in the query params
@@ -84,7 +84,7 @@ export default function ForgotPasswordPage() {
             className="space-y-4"
           >
             <p className="text-sm text-white/60 mb-2">
-              Enter your email address and we'll send you a 6-digit verification code to reset your password.
+              Enter your email address and we'll send you an 8-digit verification code to reset your password.
             </p>
             
             <div className="relative">

@@ -2,21 +2,22 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Loader2, Mail, ArrowLeft, CheckCircle2 } from 'lucide-react'
+import { Loader2, Mail, ArrowLeft } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { motion } from 'framer-motion'
 
 export default function ForgotPasswordPage() {
   const supabase = createClient()
   const { toast } = useToast()
+  const router = useRouter()
   
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
-  const [isSent, setIsSent] = useState(false)
 
   async function handleSendResetLink(e: React.FormEvent) {
     e.preventDefault()
@@ -32,20 +33,15 @@ export default function ForgotPasswordPage() {
 
     setLoading(true)
 
-    // Determine the base URL for the redirect
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 
-                    (typeof window !== 'undefined' ? window.location.origin : 'https://rebaaflix.com')
-    const redirectTo = `${siteUrl}/reset-password`
-
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo,
-    })
+    // Send the password reset email.
+    // Ensure the Supabase Email template is updated to use the {{ .Token }} instead of a URL.
+    const { error } = await supabase.auth.resetPasswordForEmail(email)
 
     setLoading(false)
 
     if (error) {
       console.error("Supabase Reset Error:", error)
-      let errorMessage = "Failed to send reset link. Please try again later."
+      let errorMessage = "Failed to send reset code. Please try again later."
       
       if (error.message.includes('over_email_send_rate_limit') || error.status === 429) {
         errorMessage = "Too many requests. Please try again later."
@@ -63,11 +59,13 @@ export default function ForgotPasswordPage() {
       return
     }
 
-    setIsSent(true)
     toast({
-      title: "Success",
-      description: "Password reset email sent.",
+      title: "Code Sent",
+      description: "A 6-digit verification code has been sent to your email.",
     })
+    
+    // Redirect to the OTP verification page with the email in the query params
+    router.push(`/verify-reset-code?email=${encodeURIComponent(email)}`)
   }
 
   return (
@@ -79,60 +77,34 @@ export default function ForgotPasswordPage() {
             <h1 className="font-display text-2xl font-black">Reset Password</h1>
           </div>
 
-          {!isSent ? (
-            <motion.form 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              onSubmit={handleSendResetLink} 
-              className="space-y-4"
-            >
-              <p className="text-sm text-white/60 mb-2">
-                Enter your email address and we'll send you a link to reset your password.
-              </p>
-              
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
-                <Input
-                  type="email"
-                  required
-                  className="pl-9"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address"
-                  disabled={loading}
-                />
-              </div>
+          <motion.form 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onSubmit={handleSendResetLink} 
+            className="space-y-4"
+          >
+            <p className="text-sm text-white/60 mb-2">
+              Enter your email address and we'll send you a 6-digit verification code to reset your password.
+            </p>
+            
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/40" />
+              <Input
+                type="email"
+                required
+                className="pl-9"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                disabled={loading}
+              />
+            </div>
 
-              <Button className="w-full" type="submit" disabled={loading || !email}>
-                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                Send Reset Link
-              </Button>
-            </motion.form>
-          ) : (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="space-y-4 text-center py-4"
-            >
-              <div className="flex justify-center mb-4">
-                <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                  <CheckCircle2 className="h-6 w-6 text-emerald-500" />
-                </div>
-              </div>
-              <h2 className="text-xl font-semibold">Check your email</h2>
-              <p className="text-sm text-white/60">
-                We've sent password reset instructions to <br/>
-                <span className="text-white font-medium">{email}</span>
-              </p>
-              <Button 
-                variant="outline" 
-                className="w-full mt-4 bg-white/5 border-white/10 hover:bg-white/10"
-                onClick={() => setIsSent(false)}
-              >
-                Try another email
-              </Button>
-            </motion.div>
-          )}
+            <Button className="w-full" type="submit" disabled={loading || !email}>
+              {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Send Verification Code
+            </Button>
+          </motion.form>
           
           <div className="mt-6 flex justify-center">
             <Link href="/login" className="flex items-center text-sm text-white/60 hover:text-white transition-colors">

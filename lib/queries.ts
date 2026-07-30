@@ -93,7 +93,7 @@ export function getComments(target: { movieId?: string; seriesId?: string }) {
   return prisma.comment.findMany({
     where: target,
     include: { user: { select: { id: true, name: true, avatarUrl: true } } },
-    orderBy: { createdAt: 'desc' },
+    orderBy: [{ isPinned: 'desc' }, { createdAt: 'desc' }],
     take: 100,
   })
 }

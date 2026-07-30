@@ -7,6 +7,8 @@ import { extractTranslator } from '@/lib/translator'
 import { Badge } from '@/components/ui/badge'
 import { PlayButton } from '@/components/content/PlayButton'
 import { isExternalVideoUrl } from '@/lib/utils'
+import { getSessionUser, hasRole } from '@/lib/auth'
+import { CommentsSection } from '@/components/content/CommentsSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,6 +30,8 @@ function decodeSlug(value: string) {
 export default async function SeriesPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
   const decodedSlug = decodeSlug(slug)
+  const user = await getSessionUser()
+  const isAdmin = hasRole(user, 'ADMIN')
   
   let series = await prisma.series.findUnique({
     where: { slug: decodedSlug },
@@ -184,6 +188,14 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
             </div>
           )}
         </div>
+        
+        {/* Comments Section */}
+        <CommentsSection
+          targetId={series.id}
+          targetType="series"
+          currentUserId={user?.id}
+          isAdmin={isAdmin}
+        />
       </div>
     </main>
   )

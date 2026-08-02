@@ -17,7 +17,7 @@ async function BrowseContent({ searchParams }: { searchParams: Promise<{ [key: s
     const movies = await prisma.movie.findMany({
       where: { published: true },
       orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }],
-      take: 24,
+      take: 100,
       include: { parts: { where: { published: true }, select: { id: true } } },
     })
     items = movies.map(item => ({ ...item, type: 'movie' }))
@@ -26,7 +26,7 @@ async function BrowseContent({ searchParams }: { searchParams: Promise<{ [key: s
     const series = await prisma.series.findMany({
       where: { published: true },
       orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }],
-      take: 24,
+      take: 100,
       include: {
         seasons: {
           include: { episodes: { select: { number: true } } },
@@ -39,7 +39,7 @@ async function BrowseContent({ searchParams }: { searchParams: Promise<{ [key: s
     const movies = await prisma.movie.findMany({
       where: { published: true },
       orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }],
-      take: 24,
+      take: 100,
       include: { parts: { where: { published: true }, select: { id: true } } },
     })
     items = movies.map(item => ({ ...item, type: 'movie' }))
@@ -48,7 +48,7 @@ async function BrowseContent({ searchParams }: { searchParams: Promise<{ [key: s
     const movies = await prisma.movie.findMany({
       where: { published: true },
       orderBy: [{ isOldContent: 'asc' }, { updatedAt: 'desc' }],
-      take: 24,
+      take: 100,
       include: { parts: { where: { published: true }, select: { id: true } } },
     })
     items = movies.map(item => ({ ...item, type: 'movie' }))

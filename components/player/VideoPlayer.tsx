@@ -472,10 +472,11 @@ export function VideoPlayer({
   }
 
   const formatTime = (secs: number) => {
-    if (!secs || isNaN(secs)) return '0:00'
-    const m = Math.floor(secs / 60)
+    if (!secs || isNaN(secs)) return '0:00:00'
+    const h = Math.floor(secs / 3600)
+    const m = Math.floor((secs % 3600) / 60)
     const s = Math.floor(secs % 60)
-    return `${m}:${s.toString().padStart(2, '0')}`
+    return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
   }
 
   const volumeIcon = muted || volume === 0 ? VolumeX : Volume2
@@ -725,7 +726,7 @@ export function VideoPlayer({
         
         {/* Progress bar */}
         <div className="flex items-center gap-1.5 sm:gap-2">
-          <span className="text-[10px] sm:text-xs text-white/70 tabular-nums w-8 sm:w-10 shrink-0">{formatTime(progress)}</span>
+          <span className="text-[10px] sm:text-xs text-white/70 tabular-nums w-12 sm:w-14 shrink-0">{formatTime(progress)}</span>
           <input
             type="range"
             min={0}
@@ -743,7 +744,7 @@ export function VideoPlayer({
               )`
             }}
           />
-          <span className="text-[10px] sm:text-xs text-white/70 tabular-nums w-8 sm:w-10 shrink-0 text-right">{formatTime(duration)}</span>
+          <span className="text-[10px] sm:text-xs text-white/70 tabular-nums w-12 sm:w-14 shrink-0 text-right">{formatTime(duration)}</span>
         </div>
 
         {/* Buttons row — two rows on mobile, single row on desktop */}

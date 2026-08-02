@@ -67,7 +67,7 @@ export async function POST(
       })
     }
 
-    const [episode] = await prisma.$transaction([
+    const transaction = [
       prisma.episode.upsert({
         where: {
           seasonId_number: {
@@ -89,12 +89,19 @@ export async function POST(
           published: true,
           isOldContent,
         },
-      }),
-      prisma.series.update({
-        where: { id: seriesId },
-        data: { updatedAt: new Date() },
-      }),
-    ])
+      })
+    ]
+    
+    if (!isOldContent) {
+      transaction.push(
+        prisma.series.update({
+          where: { id: seriesId },
+          data: { updatedAt: new Date() },
+        }) as any
+      )
+    }
+
+    const [episode] = await prisma.$transaction(transaction)
 
     revalidatePath(`/admin/series/${seriesId}/episodes`)
     revalidatePath(`/series/${series.slug}`)

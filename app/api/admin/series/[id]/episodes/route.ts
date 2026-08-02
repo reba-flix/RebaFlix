@@ -20,6 +20,7 @@ export async function POST(
   const episodeNumber = Number(body.episodeNumber)
   const title = String(body.title || '').trim()
   const videoUrl = String(body.videoUrl || '').trim()
+  const isOldContent = Boolean(body.isOldContent)
 
   if (!seriesId || !Number.isInteger(seasonNumber) || seasonNumber < 1) {
     return NextResponse.json({ error: 'A valid season number is required.' }, { status: 400 })
@@ -80,11 +81,13 @@ export async function POST(
           title,
           videoUrl,
           published: true,
+          isOldContent,
         },
         update: {
           title,
           videoUrl,
           published: true,
+          isOldContent,
         },
       }),
       prisma.series.update({

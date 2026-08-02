@@ -41,7 +41,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
         include: {
           episodes: {
             where: { published: true },
-            orderBy: { number: 'asc' }
+            orderBy: [{ isOldContent: 'asc' }, { number: 'asc' }]
           }
         },
         orderBy: { number: 'asc' }
@@ -65,7 +65,7 @@ export default async function SeriesPage({ params }: { params: Promise<{ slug: s
           include: {
             episodes: {
               where: { published: true },
-              orderBy: { number: 'asc' }
+              orderBy: [{ isOldContent: 'asc' }, { number: 'asc' }]
             }
           },
           orderBy: { number: 'asc' }

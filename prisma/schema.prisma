@@ -227,6 +227,7 @@ model Episode {
   runtimeMinutes Int?
   releaseDate    DateTime?
   published      Boolean      @default(false)
+  isOldContent   Boolean      @default(false)
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
   season         Season       @relation(fields: [seasonId], references: [id], onDelete: Cascade)

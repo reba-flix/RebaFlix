@@ -24,7 +24,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const seasons = await prisma.season.findMany({
     where: { seriesId: episode.season.seriesId },
     orderBy: { number: 'asc' },
-    include: { episodes: { where: { published: true }, orderBy: { number: 'asc' } } },
+    include: { episodes: { where: { published: true }, orderBy: [{ isOldContent: 'asc' }, { number: 'asc' }] } },
   })
   const playlist = seasons.flatMap((season) => season.episodes.map((item) => ({ ...item, seasonNumber: season.number })))
   const index = playlist.findIndex((item) => item.id === episode.id)

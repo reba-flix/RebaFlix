@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         include: {
           episodes: {
             where: { published: true },
-            orderBy: { number: 'asc' },
+            orderBy: [{ isOldContent: 'asc' }, { number: 'asc' }],
             include: { subtitles: { include: { language: true } } },
           },
         },

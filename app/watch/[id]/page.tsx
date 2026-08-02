@@ -134,7 +134,7 @@ export default async function WatchPage({
         season: {
           include: {
             series: true,
-            episodes: { orderBy: { number: 'asc' } },
+            episodes: { orderBy: [{ isOldContent: 'asc' }, { number: 'asc' }] },
           },
         },
       },

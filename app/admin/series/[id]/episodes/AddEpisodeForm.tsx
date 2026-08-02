@@ -20,6 +20,7 @@ type EpisodeDraft = {
   seasonNumber: string
   episodeNumber: string
   title: string
+  isOldContent: boolean
   videoTab: UploadTab
   videoUrlInput: string
   videoFile: File | null
@@ -37,6 +38,7 @@ function createDraft(seasonNumber: number, episodeNumber: number): EpisodeDraft 
     seasonNumber: String(seasonNumber),
     episodeNumber: String(episodeNumber),
     title: '',
+    isOldContent: false,
     videoTab: 'url',
     videoUrlInput: '',
     videoFile: null,
@@ -150,6 +152,7 @@ export function AddEpisodeForm({ seriesId, defaultSeasonNumber = 1, defaultEpiso
           episodeNumber: Number(episode.episodeNumber),
           title: episode.title.trim(),
           videoUrl,
+          isOldContent: episode.isOldContent,
         }),
       })
 
@@ -257,6 +260,21 @@ export function AddEpisodeForm({ seriesId, defaultSeasonNumber = 1, defaultEpiso
                       className="w-full rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-[#E50914]"
                     />
                   </Field>
+                </div>
+                <div className="col-span-2">
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                    <div className="relative flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={episode.isOldContent}
+                        onChange={(e) => updateEpisode(episode.id, 'isOldContent', e.target.checked)}
+                        disabled={busy}
+                        className="peer sr-only"
+                      />
+                      <div className="w-9 h-5 bg-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#E50914]"></div>
+                    </div>
+                    <span className="text-xs text-white/60">Old episode <span className="text-white/30">(sorts to back of season)</span></span>
+                  </label>
                 </div>
               </div>
 

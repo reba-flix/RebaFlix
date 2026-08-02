@@ -18,7 +18,7 @@ export default async function AdminSeriesEpisodesPage({ params }: { params: Prom
     where: { id },
     include: {
       seasons: {
-        include: { episodes: { orderBy: { number: 'asc' } } },
+        include: { episodes: { orderBy: [{ isOldContent: 'asc' }, { number: 'asc' }] } },
         orderBy: { number: 'asc' }
       }
     }
@@ -90,6 +90,7 @@ export default async function AdminSeriesEpisodesPage({ params }: { params: Prom
                           title: episode.title,
                           videoUrl: episode.videoUrl || '',
                           published: episode.published,
+                          isOldContent: episode.isOldContent,
                         }}
                       />
                     )) : (

@@ -13,6 +13,7 @@ type Episode = {
   title: string
   videoUrl: string
   published: boolean
+  isOldContent: boolean
 }
 
 type Props = {
@@ -31,6 +32,7 @@ export function EpisodeRow({ episode }: Props) {
     title: episode.title,
     videoUrl: episode.videoUrl || '',
     published: episode.published,
+    isOldContent: episode.isOldContent,
   })
 
   const handleSave = async () => {
@@ -47,6 +49,7 @@ export function EpisodeRow({ episode }: Props) {
           title: formData.title,
           videoUrl: formData.videoUrl,
           published: formData.published,
+          isOldContent: formData.isOldContent,
         }),
       })
 
@@ -142,6 +145,19 @@ export function EpisodeRow({ episode }: Props) {
             </div>
             Published to users
           </label>
+          <label className="flex items-center gap-3 text-sm text-white/80 sm:col-span-2 cursor-pointer hover:text-white transition-colors">
+            <div className="relative flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.isOldContent}
+                onChange={(e) => setFormData((current) => ({ ...current, isOldContent: e.target.checked }))}
+                disabled={loading}
+                className="peer sr-only"
+              />
+              <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+            </div>
+            Old episode <span className="text-white/40 text-xs ml-1">(sorts to back of season)</span>
+          </label>
         </div>
 
         {error && <div className="mt-5 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</div>}
@@ -175,6 +191,9 @@ export function EpisodeRow({ episode }: Props) {
               <span className="text-xs bg-emerald-500/15 text-emerald-400 px-2 py-0.5 rounded-full">Published</span>
             ) : (
               <span className="text-xs bg-amber-500/15 text-amber-400 px-2 py-0.5 rounded-full">Draft</span>
+            )}
+            {episode.isOldContent && (
+              <span className="text-xs bg-white/5 text-white/40 px-2 py-0.5 rounded-full">Old</span>
             )}
           </div>
           <div className="text-xs text-white/40 truncate max-w-sm">

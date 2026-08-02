@@ -38,6 +38,7 @@ export async function PATCH(
   const title = String(body.title || '').trim()
   const videoUrl = String(body.videoUrl || '').trim()
   const published = body.published === undefined ? undefined : Boolean(body.published)
+  const isOldContent = body.isOldContent === undefined ? undefined : Boolean(body.isOldContent)
 
   if (!Number.isInteger(seasonNumber) || seasonNumber < 1) {
     return NextResponse.json({ error: 'A valid season number is required.' }, { status: 400 })
@@ -109,6 +110,7 @@ export async function PATCH(
         title,
         videoUrl,
         published,
+        isOldContent,
       },
     })
 

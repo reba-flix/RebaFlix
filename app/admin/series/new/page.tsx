@@ -33,6 +33,7 @@ export default function NewSeriesPage() {
     contentRating: '',
     featured: false,
     published: false,
+    isOldContent: false,
     genreIds: [] as string[],
   })
 
@@ -258,7 +259,7 @@ export default function NewSeriesPage() {
               </div>
             </div>
 
-            <div className="flex space-x-6 pt-4">
+            <div className="flex flex-wrap gap-x-6 gap-y-3 pt-4">
               <label className="flex items-center space-x-2 cursor-pointer">
                 <input 
                   type="checkbox" 
@@ -278,6 +279,16 @@ export default function NewSeriesPage() {
                   className="rounded bg-black border-white/20 text-primary-500 focus:ring-primary-500 h-5 w-5"
                 />
                 <span>Featured (Show on homepage banner)</span>
+              </label>
+              <label className="flex items-center space-x-2 cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  name="isOldContent" 
+                  checked={formData.isOldContent} 
+                  onChange={handleChange} 
+                  className="rounded bg-black border-white/20 text-primary-500 focus:ring-primary-500 h-5 w-5"
+                />
+                <span>Old Series (Sort lower in catalog)</span>
               </label>
             </div>
           </div>

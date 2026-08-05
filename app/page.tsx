@@ -80,9 +80,14 @@ export default async function HomePage() {
 
   const topRated = catalog?.topRated.length ? catalog.topRated : fallbackItems(fallbackRows.topRated)
 
+  const featuredContent = [...mixedNewReleases, ...trending, ...popular]
+    .filter(item => item.featured)
+    .filter((item, index, self) => index === self.findIndex((t) => t.id === item.id))
+    .slice(0, 5)
+
   return (
     <main className="min-h-screen space-y-8 pb-16">
-      <HeroBanner movies={mixedNewReleases.slice(0, 5)} />
+      <HeroBanner movies={featuredContent} />
       <NewReleasesRow items={mixedNewReleases} />
       <ContentRow title="Trending" items={trending} />
       <ContentRow title="Popular" items={popular} />

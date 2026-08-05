@@ -14,6 +14,7 @@ type Episode = {
   videoUrl: string
   published: boolean
   isOldContent: boolean
+  isFinal: boolean
 }
 
 type Props = {
@@ -33,6 +34,7 @@ export function EpisodeRow({ episode }: Props) {
     videoUrl: episode.videoUrl || '',
     published: episode.published,
     isOldContent: episode.isOldContent,
+    isFinal: episode.isFinal,
   })
 
   const handleSave = async () => {
@@ -50,6 +52,7 @@ export function EpisodeRow({ episode }: Props) {
           videoUrl: formData.videoUrl,
           published: formData.published,
           isOldContent: formData.isOldContent,
+          isFinal: formData.isFinal,
         }),
       })
 
@@ -158,6 +161,19 @@ export function EpisodeRow({ episode }: Props) {
             </div>
             Old episode <span className="text-white/40 text-xs ml-1">(sorts to back of season)</span>
           </label>
+          <label className="flex items-center gap-3 text-sm text-white/80 sm:col-span-2 cursor-pointer hover:text-white transition-colors">
+            <div className="relative flex items-center">
+              <input
+                type="checkbox"
+                checked={formData.isFinal}
+                onChange={(e) => setFormData((current) => ({ ...current, isFinal: e.target.checked }))}
+                disabled={loading}
+                className="peer sr-only"
+              />
+              <div className="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#E50914]"></div>
+            </div>
+            Final episode <span className="text-white/40 text-xs ml-1">(shows Final badge on client)</span>
+          </label>
         </div>
 
         {error && <div className="mt-5 rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-300">{error}</div>}
@@ -194,6 +210,9 @@ export function EpisodeRow({ episode }: Props) {
             )}
             {episode.isOldContent && (
               <span className="text-xs bg-white/5 text-white/40 px-2 py-0.5 rounded-full">Old</span>
+            )}
+            {episode.isFinal && (
+              <span className="text-xs bg-[#E50914]/20 text-[#E50914] border border-[#E50914]/30 px-2 py-0.5 rounded-full">Final</span>
             )}
           </div>
           <div className="text-xs text-white/40 truncate max-w-sm">

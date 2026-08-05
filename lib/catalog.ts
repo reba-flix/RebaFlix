@@ -24,11 +24,12 @@ export async function getHomeCatalog() {
             orderBy: { number: 'desc' },
             take: 1,
             select: {
+              number: true,
               createdAt: true,
               episodes: {
                 orderBy: { number: 'desc' },
                 take: 1,
-                select: { number: true, createdAt: true },
+                select: { number: true, createdAt: true, isFinal: true },
               },
             },
           },
@@ -50,11 +51,12 @@ export async function getHomeCatalog() {
             orderBy: { number: 'desc' },
             take: 1,
             select: {
+              number: true,
               createdAt: true,
               episodes: {
                 orderBy: { number: 'desc' },
                 take: 1,
-                select: { number: true, createdAt: true },
+                select: { number: true, createdAt: true, isFinal: true },
               },
             },
           },
@@ -112,11 +114,12 @@ export async function getHomeCatalog() {
             orderBy: { number: 'desc' },
             take: 1,
             select: {
+              number: true,
               createdAt: true,
               episodes: {
                 orderBy: { number: 'desc' },
                 take: 1,
-                select: { number: true, createdAt: true },
+                select: { number: true, createdAt: true, isFinal: true },
               },
             },
           },
@@ -135,7 +138,7 @@ export async function getHomeCatalog() {
         include: {
           genres: { include: { genre: true } },
           seasons: {
-            include: { episodes: { select: { number: true } } },
+            include: { episodes: { select: { number: true, isFinal: true } } },
           },
         },
       }),
@@ -172,12 +175,17 @@ export async function getHomeCatalog() {
   }))
 
   const taggedTrendingSeries = (trendingSeries || []).map((item: any) => {
-    const latestEp = item.seasons?.[0]?.episodes?.[0]
+    const latestSeason = item.seasons?.[0]
+    const latestEp = latestSeason?.episodes?.[0]
     const latestEpisodeNumber = latestEp?.number ?? undefined
+    const latestSeasonNumber = latestSeason?.number ?? undefined
+    const isFinalEpisode = latestEp?.isFinal ?? false
     return {
       ...item,
       itemType: 'series' as const,
       latestEpisodeNumber,
+      latestSeasonNumber,
+      isFinalEpisode,
     }
   })
 
@@ -202,12 +210,17 @@ export async function getHomeCatalog() {
   }))
 
   const taggedPopularSeries = (popularSeries || []).map((item: any) => {
-    const latestEp = item.seasons?.[0]?.episodes?.[0]
+    const latestSeason = item.seasons?.[0]
+    const latestEp = latestSeason?.episodes?.[0]
     const latestEpisodeNumber = latestEp?.number ?? undefined
+    const latestSeasonNumber = latestSeason?.number ?? undefined
+    const isFinalEpisode = latestEp?.isFinal ?? false
     return {
       ...item,
       itemType: 'series' as const,
       latestEpisodeNumber,
+      latestSeasonNumber,
+      isFinalEpisode,
     }
   })
 

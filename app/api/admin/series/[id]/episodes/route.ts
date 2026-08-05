@@ -21,6 +21,7 @@ export async function POST(
   const title = String(body.title || '').trim()
   const videoUrl = String(body.videoUrl || '').trim()
   const isOldContent = Boolean(body.isOldContent)
+  const isFinal = Boolean(body.isFinal)
 
   if (!seriesId || !Number.isInteger(seasonNumber) || seasonNumber < 1) {
     return NextResponse.json({ error: 'A valid season number is required.' }, { status: 400 })
@@ -82,12 +83,14 @@ export async function POST(
           videoUrl,
           published: true,
           isOldContent,
+          isFinal,
         },
         update: {
           title,
           videoUrl,
           published: true,
           isOldContent,
+          isFinal,
         },
       })
     ]

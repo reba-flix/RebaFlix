@@ -21,6 +21,7 @@ type EpisodeDraft = {
   episodeNumber: string
   title: string
   isOldContent: boolean
+  isFinal: boolean
   videoTab: UploadTab
   videoUrlInput: string
   videoFile: File | null
@@ -39,6 +40,7 @@ function createDraft(seasonNumber: number, episodeNumber: number): EpisodeDraft 
     episodeNumber: String(episodeNumber),
     title: '',
     isOldContent: false,
+    isFinal: false,
     videoTab: 'url',
     videoUrlInput: '',
     videoFile: null,
@@ -153,6 +155,7 @@ export function AddEpisodeForm({ seriesId, defaultSeasonNumber = 1, defaultEpiso
           title: episode.title.trim(),
           videoUrl,
           isOldContent: episode.isOldContent,
+          isFinal: episode.isFinal,
         }),
       })
 
@@ -274,6 +277,19 @@ export function AddEpisodeForm({ seriesId, defaultSeasonNumber = 1, defaultEpiso
                       <div className="w-9 h-5 bg-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#E50914]"></div>
                     </div>
                     <span className="text-xs text-white/60">Old episode <span className="text-white/30">(sorts to back of season)</span></span>
+                  </label>
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none mt-2">
+                    <div className="relative flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={episode.isFinal}
+                        onChange={(e) => updateEpisode(episode.id, 'isFinal', e.target.checked)}
+                        disabled={busy}
+                        className="peer sr-only"
+                      />
+                      <div className="w-9 h-5 bg-white/10 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#E50914]"></div>
+                    </div>
+                    <span className="text-xs text-white/60">Final episode <span className="text-white/30">(shows Final badge on client)</span></span>
                   </label>
                 </div>
               </div>

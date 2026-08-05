@@ -91,6 +91,7 @@ export default async function AdminSeriesEpisodesPage({ params }: { params: Prom
                           videoUrl: episode.videoUrl || '',
                           published: episode.published,
                           isOldContent: episode.isOldContent,
+                          isFinal: episode.isFinal,
                         }}
                       />
                     )) : (

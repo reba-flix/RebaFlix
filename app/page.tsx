@@ -48,8 +48,11 @@ export default async function HomePage() {
   })
   const taggedSeries = rawSeries.map((item: any) => {
     // seasons is now only the latest season with only the latest episode
-    const latestEp = item.seasons?.[0]?.episodes?.[0]
+    const latestSeason = item.seasons?.[0]
+    const latestEp = latestSeason?.episodes?.[0]
     const latestEpisodeNumber = latestEp?.number ?? undefined
+    const latestSeasonNumber = latestSeason?.number ?? undefined
+    const isFinalEpisode = latestEp?.isFinal ?? false
     
     let latestMs = item.createdAt ? new Date(item.createdAt).getTime() : 0
     if ('seasons' in item && Array.isArray(item.seasons)) {
@@ -62,7 +65,7 @@ export default async function HomePage() {
         }
       }
     }
-    return { ...item, itemType: 'series' as const, latestEpisodeNumber, createdAt: new Date(latestMs) }
+    return { ...item, itemType: 'series' as const, latestEpisodeNumber, latestSeasonNumber, isFinalEpisode, createdAt: new Date(latestMs) }
   })
   
   // New Releases: sorted by when the content was first added to the platform

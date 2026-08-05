@@ -25,6 +25,8 @@ type RowItem = {
   parts?: Array<unknown>
   _count?: { seasons?: number }
   latestEpisodeNumber?: number
+  latestSeasonNumber?: number
+  isFinalEpisode?: boolean
   partCount?: number
   videoUrl?: string | null
   releaseDate?: string | Date | null
@@ -137,9 +139,9 @@ function SpotlightCard({ item, index }: { item: RowItem; index: number }) {
           {addedDate && (
             <span className="text-white/50 text-xs">{formatDate(addedDate)}</span>
           )}
-          {isSeries && item.latestEpisodeNumber && (
+          {isSeries && item.latestEpisodeNumber !== undefined && (
             <span className="flex items-center gap-1 text-white/70 text-xs">
-              <Film className="h-3 w-3" /> Ep {item.latestEpisodeNumber}
+              <Film className="h-3 w-3" /> {item.latestSeasonNumber !== undefined ? `S${item.latestSeasonNumber} ` : ''}Ep {item.latestEpisodeNumber}{item.isFinalEpisode ? ' (Final)' : ''}
             </span>
           )}
         </div>
@@ -176,10 +178,16 @@ function NumberedCard({ item, rank }: { item: RowItem; rank: number }) {
     : item.id ? `/watch/${item.id}` : '#'
 
   let latestEpisodeNumber: number | undefined
+  let latestSeasonNumber: number | undefined
+  let isFinalEpisode: boolean | undefined
+
   if (isSeries) {
     if (item.latestEpisodeNumber !== undefined) {
       latestEpisodeNumber = item.latestEpisodeNumber
+      latestSeasonNumber = item.latestSeasonNumber
+      isFinalEpisode = item.isFinalEpisode
     } else if (item.seasons) {
+      // Fallback
       latestEpisodeNumber = item.seasons.reduce((max, season) => {
         const seasonMax = season.episodes?.reduce((epMax, ep) => Math.max(epMax, Number(ep.number) || 0), 0) ?? season._count?.episodes ?? 0
         return Math.max(max, seasonMax)
@@ -230,10 +238,10 @@ function NumberedCard({ item, rank }: { item: RowItem; rank: number }) {
           )}
 
           {/* Episode badge */}
-          {isSeries && latestEpisodeNumber && latestEpisodeNumber > 0 && (
+          {isSeries && latestEpisodeNumber !== undefined && latestEpisodeNumber > 0 && (
             <div className="absolute bottom-1.5 left-0 right-0 flex justify-center z-10">
               <span className="inline-flex items-center gap-0.5 bg-[#E50914] text-white text-[9px] font-black px-2 py-0.5 rounded-full">
-                <Film className="h-2.5 w-2.5" /> Ep {latestEpisodeNumber}
+                <Film className="h-2.5 w-2.5" /> {latestSeasonNumber !== undefined ? `S${latestSeasonNumber} ` : ''}Ep {latestEpisodeNumber}{isFinalEpisode ? ' (Final)' : ''}
               </span>
             </div>
           )}

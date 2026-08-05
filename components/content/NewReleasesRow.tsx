@@ -141,7 +141,7 @@ function SpotlightCard({ item, index }: { item: RowItem; index: number }) {
           )}
           {isSeries && item.latestEpisodeNumber !== undefined && (
             <span className="flex items-center gap-1 text-white/70 text-xs">
-              <Film className="h-3 w-3" /> {item.latestSeasonNumber !== undefined ? `S${item.latestSeasonNumber} ` : ''}Ep {item.latestEpisodeNumber}{item.isFinalEpisode ? ' (Final)' : ''}
+              <Film className="h-3 w-3" /> S{item.latestSeasonNumber ?? 1} Ep {item.latestEpisodeNumber}{item.isFinalEpisode ? ' (Final)' : ''}
             </span>
           )}
         </div>
@@ -241,7 +241,7 @@ function NumberedCard({ item, rank }: { item: RowItem; rank: number }) {
           {isSeries && latestEpisodeNumber !== undefined && latestEpisodeNumber > 0 && (
             <div className="absolute bottom-1.5 left-0 right-0 flex justify-center z-10">
               <span className="inline-flex items-center gap-0.5 bg-[#E50914] text-white text-[9px] font-black px-2 py-0.5 rounded-full">
-                <Film className="h-2.5 w-2.5" /> {latestSeasonNumber !== undefined ? `S${latestSeasonNumber} ` : ''}Ep {latestEpisodeNumber}{isFinalEpisode ? ' (Final)' : ''}
+                <Film className="h-2.5 w-2.5" /> S{latestSeasonNumber ?? 1} Ep {latestEpisodeNumber}{isFinalEpisode ? ' (Final)' : ''}
               </span>
             </div>
           )}

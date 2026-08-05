@@ -202,7 +202,7 @@ export function MediaCard({
           <div className="absolute bottom-[4.75rem] left-1/2 z-10 -translate-x-1/2 pointer-events-none">
             <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-[#E50914] px-3 py-1.5 text-[11px] font-black text-white shadow-lg shadow-black/50">
               <Film className="h-3 w-3 flex-shrink-0" />
-              {latestSeasonNumber !== undefined ? `S${latestSeasonNumber} ` : ''}Ep {latestEpisodeNumber}{isFinalEpisode ? ' (Final)' : ''}
+              S{latestSeasonNumber ?? 1} Ep {latestEpisodeNumber}{isFinalEpisode ? ' (Final)' : ''}
             </span>
           </div>
         )}

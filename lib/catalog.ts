@@ -138,7 +138,16 @@ export async function getHomeCatalog() {
         include: {
           genres: { include: { genre: true } },
           seasons: {
-            include: { episodes: { select: { number: true, isFinal: true } } },
+            orderBy: { number: 'desc' },
+            take: 1,
+            select: {
+              number: true,
+              episodes: {
+                orderBy: { number: 'desc' },
+                take: 1,
+                select: { number: true, isFinal: true },
+              },
+            },
           },
         },
       }),
@@ -234,7 +243,22 @@ export async function getHomeCatalog() {
     return bViews - aViews
   })
 
-  return { hero, trending, popular, newReleases, newSeries, topRated, series, kids, action, comedy, drama, horror, anime }
+  const taggedSeries = (series || []).map((item: any) => {
+    const latestSeason = item.seasons?.[0]
+    const latestEp = latestSeason?.episodes?.[0]
+    const latestEpisodeNumber = latestEp?.number ?? undefined
+    const latestSeasonNumber = latestSeason?.number ?? undefined
+    const isFinalEpisode = latestEp?.isFinal ?? false
+    return {
+      ...item,
+      itemType: 'series' as const,
+      latestEpisodeNumber,
+      latestSeasonNumber,
+      isFinalEpisode,
+    }
+  })
+
+  return { hero, trending, popular, newReleases, newSeries, topRated, series: taggedSeries, kids, action, comedy, drama, horror, anime }
 }
 
 export const demoPosters = [

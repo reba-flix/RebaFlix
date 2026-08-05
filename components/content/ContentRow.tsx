@@ -18,11 +18,13 @@ type RowItem = {
   translator?: string | null
   itemType?: 'movie' | 'series' | 'live'
   genres?: Array<{ genre: { name: string } }>
-  seasons?: Array<{ _count?: { episodes?: number }; episodes?: Array<{ number?: number | null }> }>
+  seasons?: Array<{ _count?: { episodes?: number }; episodes?: Array<{ number?: number | null; isFinal?: boolean | null }> }>
   parts?: Array<unknown>
   _count?: { seasons?: number }
   episodeCount?: number
   latestEpisodeNumber?: number
+  latestSeasonNumber?: number
+  isFinalEpisode?: boolean
   partCount?: number
   videoUrl?: string | null
   releaseDate?: string | Date | null
@@ -66,18 +68,38 @@ export function ContentRow({ title, items, type = 'movie' }: ContentRowProps) {
             // Extract genre names
             const genreNames = item.genres?.map(g => g.genre.name) ?? []
 
-            // Calculate the latest episode number for series
+            // Calculate the latest episode number, season number, and isFinal for series
             let latestEpisodeNumber: number | undefined = undefined
+            let latestSeasonNumber: number | undefined = undefined
+            let isFinalEpisode: boolean | undefined = undefined
             if (cardType === 'series') {
               if (item.latestEpisodeNumber !== undefined) {
+                // Pre-computed by catalog.ts (trending/popular/newSeries)
                 latestEpisodeNumber = item.latestEpisodeNumber
+                latestSeasonNumber = item.latestSeasonNumber
+                isFinalEpisode = item.isFinalEpisode
               } else if (item.seasons) {
-                latestEpisodeNumber = item.seasons.reduce((max, season) => {
-                  const seasonMax = season.episodes?.reduce((episodeMax, episode) => {
-                    return Math.max(episodeMax, Number(episode.number) || 0)
-                  }, 0) ?? season._count?.episodes ?? 0
-                  return Math.max(max, seasonMax)
-                }, 0)
+                // Raw Prisma seasons (TV Series row) — find the latest episode across all seasons
+                let latestSeasonNum: number | undefined = undefined
+                let latestEpNum = 0
+                let latestIsFinal = false
+                for (const season of item.seasons) {
+                  if (season.episodes) {
+                    for (const ep of season.episodes) {
+                      const n = Number(ep.number) || 0
+                      if (n > latestEpNum) {
+                        latestEpNum = n
+                        latestIsFinal = ep.isFinal ?? false
+                        latestSeasonNum = undefined // season number not available in this shape
+                      }
+                    }
+                  }
+                  const seasonMax = season._count?.episodes ?? 0
+                  if (seasonMax > latestEpNum) latestEpNum = seasonMax
+                }
+                latestEpisodeNumber = latestEpNum > 0 ? latestEpNum : undefined
+                latestSeasonNumber = latestSeasonNum
+                isFinalEpisode = latestIsFinal
               }
             }
             const partCount = cardType === 'movie'
@@ -96,6 +118,8 @@ export function ContentRow({ title, items, type = 'movie' }: ContentRowProps) {
                 translator={item.translator ?? extractTranslator(item.description)}
                 genres={genreNames}
                 latestEpisodeNumber={latestEpisodeNumber}
+                latestSeasonNumber={latestSeasonNumber}
+                isFinalEpisode={isFinalEpisode}
                 partCount={partCount}
                 releaseYear={item.releaseDate ? new Date(item.releaseDate).getFullYear() : (item.createdAt ? new Date(item.createdAt).getFullYear() : undefined)}
               />

@@ -32,6 +32,7 @@ type RowItem = {
   releaseDate?: string | Date | null
   createdAt?: string | Date | null
   updatedAt?: string | Date | null
+  featured?: boolean
 }
 
 type NewReleasesRowProps = {
@@ -276,8 +277,10 @@ export function NewReleasesRow({ items }: NewReleasesRowProps) {
 
   if (!items.length) return null
 
-  const spotlight = items[0]
-  const rest = items.slice(1)
+  const spotlightIndex = items.findIndex(item => item.featured)
+  const actualSpotlightIndex = spotlightIndex >= 0 ? spotlightIndex : 0
+  const spotlight = items[actualSpotlightIndex]
+  const rest = items.filter((_, idx) => idx !== actualSpotlightIndex)
 
   const updateScrollState = () => {
     const el = rowRef.current

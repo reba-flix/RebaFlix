@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { rateLimit } from '@/lib/rate-limit'
 import { translatorMatches } from '@/lib/translator'
+import { autocompleteCatalog } from '@/lib/search-catalog'
 
 export async function GET(request: NextRequest) {
   const limited = rateLimit(request, 60)
@@ -9,6 +10,16 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = new URL(request.url)
   const query = searchParams.get('q')?.trim() ?? ''
+
+  if (searchParams.get('autocomplete') === '1') {
+    if (!query) return NextResponse.json({ results: [] })
+    if (query.length > 100) return NextResponse.json({ error: 'Search is too long' }, { status: 400 })
+    try {
+      return NextResponse.json({ results: await autocompleteCatalog(query) })
+    } catch {
+      return NextResponse.json({ error: 'Search is temporarily unavailable' }, { status: 503 })
+    }
+  }
 
   if (!query) return NextResponse.json({ suggestions: [], movies: [], series: [] })
 

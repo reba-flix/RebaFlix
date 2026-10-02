@@ -69,7 +69,7 @@ export function MediaCard({
   releaseYear,
 }: MediaCardProps) {
   const target = href ?? (type === 'live' ? '/live' : `/${type === 'series' ? 'series' : 'movie'}/${slug ?? id}`)
-  const watchTarget = type === 'series' ? target : (id ? `/watch/${id}` : target)
+  const watchTarget = target
   const downloadTarget = id ? `/api/${type === 'series' ? 'series' : 'movies'}/${id}/download` : '#'
 
   const [liked, setLiked] = useState(false)
@@ -178,19 +178,19 @@ export function MediaCard({
         </button>
 
         {/* ── CENTER: Play + Download ── */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-10">
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pointer-events-none opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity duration-200 z-10">
           <Link
             href={watchTarget}
             onClick={e => e.stopPropagation()}
             aria-label={`Play ${title}`}
-            className="w-14 h-14 rounded-full bg-white hover:bg-white/90 flex items-center justify-center shadow-2xl shadow-black/60 transition-transform hover:scale-110 active:scale-95"
+            className="pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400 w-14 h-14 rounded-full bg-white hover:bg-white/90 flex items-center justify-center shadow-2xl shadow-black/60 transition-transform hover:scale-110 active:scale-95"
           >
             <Play className="h-6 w-6 fill-black text-black ml-1" />
           </Link>
           <button
             onClick={handleDownload}
             aria-label={`Download ${title}`}
-            className="flex items-center gap-1.5 bg-black/70 hover:bg-black/90 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors border border-white/10"
+            className="pointer-events-auto flex items-center gap-1.5 bg-black/70 hover:bg-black/90 text-white text-xs font-medium px-3 py-1.5 rounded-full transition-colors border border-white/10"
           >
             <Download className="h-3.5 w-3.5" />
             Download
@@ -229,7 +229,7 @@ export function MediaCard({
               </span>
             ) : null}
           </div>
-          <h3 className="line-clamp-2 text-sm font-bold text-white">{title}</h3>
+          <h3 className="line-clamp-2 text-sm font-bold text-white"><Link href={target} className="pointer-events-auto relative z-20 focus-visible:outline focus-visible:outline-red-400">{title}</Link></h3>
 
           {translator ? (
             <p className="mt-0.5 flex items-center gap-1 text-[11px] font-medium leading-tight text-white/75">

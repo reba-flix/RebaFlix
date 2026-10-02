@@ -57,7 +57,7 @@ export default async function AdminPage() {
       </div>
 
       {/* Stats Grid */}
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mb-10">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4 mb-10">
         {stats.map(({ label, value, icon: Icon, trend, up, href }) => (
           <Link href={href} key={label} className="group relative overflow-hidden rounded-xl border border-white/5 bg-white/[0.02] p-6 hover:bg-white/[0.04] transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40">
             {/* Subtle Gradient Glow */}

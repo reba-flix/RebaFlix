@@ -2,9 +2,9 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Play, Star, Film, Sparkles } from 'lucide-react'
-import { demoPosters } from '@/lib/catalog'
+import { demoPosters } from '@/lib/demo-posters'
 import { extractTranslator } from '@/lib/translator'
 import { cn } from '@/lib/utils'
 
@@ -39,6 +39,10 @@ type NewReleasesRowProps = {
   items: RowItem[]
 }
 
+const AUTO_SLIDE_MAX_WIDTH = 1024
+const AUTO_SLIDE_INTERVAL_MS = 3000
+const AUTO_SLIDE_RESUME_DELAY_MS = 5000
+
 const genreColors: Record<string, string> = {
   action:      'bg-red-600',
   adventure:   'bg-emerald-600',
@@ -69,7 +73,7 @@ function formatDate(date?: string | Date | null) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-// ── Spotlight (featured first card) ──────────────────────────────────────────
+// Spotlight (featured first card)
 function SpotlightCard({ item, index }: { item: RowItem; index: number }) {
   const title = item.title ?? item.name ?? 'Untitled'
   const image = item.backdropUrl ?? item.posterUrl ?? item.logoUrl ?? demoPosters[0]
@@ -78,7 +82,7 @@ function SpotlightCard({ item, index }: { item: RowItem; index: number }) {
   const primaryGenre = genres[0]
   const watchUrl = isSeries
     ? `/series/${item.slug ?? item.id}`
-    : item.id ? `/watch/${item.id}` : '#'
+    : `/movie/${item.slug ?? item.id}`
   const infoUrl = isSeries
     ? `/series/${item.slug ?? item.id}`
     : `/movie/${item.slug ?? item.id}`
@@ -101,8 +105,10 @@ function SpotlightCard({ item, index }: { item: RowItem; index: number }) {
       <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-transparent to-transparent" />
 
+      <Link href={infoUrl} className="absolute inset-0 z-10" aria-label={`View ${title}`} />
+
       {/* #1 Badge */}
-      <div className="absolute top-4 left-4 z-20">
+      <div className="absolute top-4 left-4 z-20 pointer-events-none">
         <div className="flex items-center gap-2">
           <span className="text-5xl font-black text-white/20 leading-none select-none" style={{ WebkitTextStroke: '2px rgba(255,255,255,0.35)', fontFamily: 'Impact, sans-serif' }}>
             #{index + 1}
@@ -111,7 +117,7 @@ function SpotlightCard({ item, index }: { item: RowItem; index: number }) {
       </div>
 
       {/* NEW ribbon */}
-      <div className="absolute top-3 right-3 z-20">
+      <div className="absolute top-3 right-3 z-20 pointer-events-none">
         <span className="inline-flex items-center gap-1 rounded-full bg-[#E50914] px-3 py-1 text-[11px] font-black text-white uppercase tracking-widest shadow-lg animate-pulse">
           <Sparkles className="h-3 w-3" />
           NEW
@@ -120,7 +126,7 @@ function SpotlightCard({ item, index }: { item: RowItem; index: number }) {
 
       {/* Genre badge */}
       {primaryGenre && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none">
           <span className={cn('text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wide text-white', getGenreColor(primaryGenre))}>
             {primaryGenre}
           </span>
@@ -129,7 +135,7 @@ function SpotlightCard({ item, index }: { item: RowItem; index: number }) {
 
       {/* Bottom info */}
       <div className="absolute bottom-0 left-0 right-0 z-20 p-5">
-        <h3 className="text-xl sm:text-2xl font-black text-white leading-tight line-clamp-2 mb-2">{title}</h3>
+        <h3 className="text-xl sm:text-2xl font-black text-white leading-tight line-clamp-2 mb-2"><Link href={infoUrl}>{title}</Link></h3>
         <div className="flex items-center gap-3 mb-4">
           {item.averageRating ? (
             <span className="flex items-center gap-1 text-yellow-400 text-sm font-semibold">
@@ -167,7 +173,7 @@ function SpotlightCard({ item, index }: { item: RowItem; index: number }) {
   )
 }
 
-// ── Small numbered card ───────────────────────────────────────────────────────
+// Small numbered card
 function NumberedCard({ item, rank }: { item: RowItem; rank: number }) {
   const title = item.title ?? item.name ?? 'Untitled'
   const image = item.posterUrl ?? item.logoUrl ?? demoPosters[rank % demoPosters.length]
@@ -176,7 +182,7 @@ function NumberedCard({ item, rank }: { item: RowItem; rank: number }) {
   const primaryGenre = genres[0]
   const watchUrl = isSeries
     ? `/series/${item.slug ?? item.id}`
-    : item.id ? `/watch/${item.id}` : '#'
+    : `/movie/${item.slug ?? item.id}`
 
   let latestEpisodeNumber: number | undefined
   let latestSeasonNumber: number | undefined
@@ -209,7 +215,7 @@ function NumberedCard({ item, rank }: { item: RowItem; rank: number }) {
       {/* Poster card */}
       <div className="relative z-10 w-[110px] sm:w-[130px] shrink-0 overflow-hidden rounded-xl border border-white/10 shadow-xl shadow-black/50 transition-transform duration-300 group-hover:scale-105 group-hover:border-white/30">
         <div className="relative aspect-[2/3]">
-          <Link href={watchUrl} className="absolute inset-0 z-20" aria-label={`Play ${title}`} />
+          <Link href={watchUrl} className="absolute inset-0 z-20" aria-label={`View ${title}`} />
           <Image
             src={image}
             alt={title}
@@ -257,7 +263,7 @@ function NumberedCard({ item, rank }: { item: RowItem; rank: number }) {
 
         {/* Title below poster */}
         <div className="px-2 py-1.5 bg-[#1a1a1a]">
-          <p className="text-[11px] font-semibold text-white line-clamp-1">{title}</p>
+          <p className="text-[11px] font-semibold text-white line-clamp-1"><Link href={watchUrl}>{title}</Link></p>
           {item.averageRating ? (
             <p className="text-[10px] text-yellow-400 flex items-center gap-0.5 mt-0.5">
               <Star className="h-2.5 w-2.5 fill-current" /> {item.averageRating.toFixed(1)}
@@ -269,11 +275,135 @@ function NumberedCard({ item, rank }: { item: RowItem; rank: number }) {
   )
 }
 
-// ── Main exported component ───────────────────────────────────────────────────
+// Main exported component
 export function NewReleasesRow({ items }: NewReleasesRowProps) {
   const rowRef = useRef<HTMLDivElement>(null)
+  const loopMarkerRef = useRef<HTMLDivElement>(null)
+  const resumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const frameRef = useRef<number | null>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
+  const [isAutoSlideViewport, setIsAutoSlideViewport] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+  const [isAutoSlidePaused, setIsAutoSlidePaused] = useState(false)
+  const shouldRenderLoop = isAutoSlideViewport && !prefersReducedMotion && items.length > 1
+
+  const normalizeLoopPosition = useCallback(() => {
+    const el = rowRef.current
+    const marker = loopMarkerRef.current
+    if (!el || !marker) return
+
+    const loopWidth = marker.offsetLeft
+    if (loopWidth <= 0) return
+
+    if (el.scrollLeft >= loopWidth) {
+      el.scrollTo({ left: el.scrollLeft - loopWidth, behavior: 'auto' })
+    }
+  }, [])
+
+  const updateScrollState = useCallback(() => {
+    const el = rowRef.current
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 10)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 10)
+  }, [])
+
+  useEffect(() => {
+    const viewportQuery = window.matchMedia(`(max-width: ${AUTO_SLIDE_MAX_WIDTH}px)`)
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+
+    const syncMediaState = () => {
+      setIsAutoSlideViewport(viewportQuery.matches)
+      setPrefersReducedMotion(motionQuery.matches)
+    }
+
+    syncMediaState()
+    viewportQuery.addEventListener('change', syncMediaState)
+    motionQuery.addEventListener('change', syncMediaState)
+
+    return () => {
+      viewportQuery.removeEventListener('change', syncMediaState)
+      motionQuery.removeEventListener('change', syncMediaState)
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (resumeTimerRef.current) {
+        clearTimeout(resumeTimerRef.current)
+      }
+      if (settleTimerRef.current) {
+        clearTimeout(settleTimerRef.current)
+      }
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!shouldRenderLoop) {
+      setIsAutoSlidePaused(false)
+      return
+    }
+
+    frameRef.current = requestAnimationFrame(() => {
+      normalizeLoopPosition()
+      updateScrollState()
+      frameRef.current = null
+    })
+  }, [normalizeLoopPosition, shouldRenderLoop, updateScrollState])
+
+  useEffect(() => {
+    if (!shouldRenderLoop || isAutoSlidePaused) return
+
+    const timer = setInterval(() => {
+      const el = rowRef.current
+      if (!el) return
+
+      normalizeLoopPosition()
+      const amount = Math.min(Math.max(el.clientWidth * 0.72, 240), el.clientWidth - 24)
+      el.scrollBy({ left: amount, behavior: 'smooth' })
+
+      if (settleTimerRef.current) {
+        clearTimeout(settleTimerRef.current)
+      }
+
+      settleTimerRef.current = setTimeout(() => {
+        normalizeLoopPosition()
+        updateScrollState()
+        settleTimerRef.current = null
+      }, 850)
+    }, AUTO_SLIDE_INTERVAL_MS)
+
+    return () => clearInterval(timer)
+  }, [isAutoSlidePaused, normalizeLoopPosition, shouldRenderLoop, updateScrollState])
+
+  const pauseAutoSlide = useCallback(() => {
+    if (!shouldRenderLoop) return
+
+    setIsAutoSlidePaused(true)
+    if (resumeTimerRef.current) {
+      clearTimeout(resumeTimerRef.current)
+      resumeTimerRef.current = null
+    }
+  }, [shouldRenderLoop])
+
+  const resumeAutoSlideAfterInteraction = useCallback(() => {
+    if (!shouldRenderLoop) return
+
+    if (resumeTimerRef.current) {
+      clearTimeout(resumeTimerRef.current)
+    }
+
+    resumeTimerRef.current = setTimeout(() => {
+      normalizeLoopPosition()
+      updateScrollState()
+      setIsAutoSlidePaused(false)
+      resumeTimerRef.current = null
+    }, AUTO_SLIDE_RESUME_DELAY_MS)
+  }, [normalizeLoopPosition, shouldRenderLoop, updateScrollState])
 
   if (!items.length) return null
 
@@ -282,21 +412,18 @@ export function NewReleasesRow({ items }: NewReleasesRowProps) {
   const spotlight = items[actualSpotlightIndex]
   const rest = items.filter((_, idx) => idx !== actualSpotlightIndex)
 
-  const updateScrollState = () => {
-    const el = rowRef.current
-    if (!el) return
-    setCanScrollLeft(el.scrollLeft > 10)
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 10)
-  }
-
   const scroll = (dir: 'left' | 'right') => {
     const el = rowRef.current
     if (!el) return
+    pauseAutoSlide()
     const amount = dir === 'left' ? -el.clientWidth + 100 : el.clientWidth - 100
     el.scrollBy({ left: amount, behavior: 'smooth' })
-    setTimeout(updateScrollState, 400)
+    setTimeout(() => {
+      normalizeLoopPosition()
+      updateScrollState()
+    }, 400)
+    resumeAutoSlideAfterInteraction()
   }
-
   return (
     <section className="px-4 md:px-8 lg:px-12 space-y-5">
       {/* Section header */}
@@ -354,7 +481,14 @@ export function NewReleasesRow({ items }: NewReleasesRowProps) {
         {/* Scrollable row */}
         <div
           ref={rowRef}
-          onScroll={updateScrollState}
+          onPointerDown={pauseAutoSlide}
+          onPointerUp={resumeAutoSlideAfterInteraction}
+          onPointerCancel={resumeAutoSlideAfterInteraction}
+          onPointerLeave={resumeAutoSlideAfterInteraction}
+          onScroll={() => {
+            normalizeLoopPosition()
+            updateScrollState()
+          }}
           className="scrollbar-hide flex items-end gap-4 overflow-x-auto pb-4 pt-1"
         >
           {/* Featured spotlight card */}
@@ -364,8 +498,21 @@ export function NewReleasesRow({ items }: NewReleasesRowProps) {
           {rest.map((item, i) => (
             <NumberedCard key={item.id ?? item.slug ?? `nr-${i}`} item={item} rank={i + 2} />
           ))}
+
+          {shouldRenderLoop && (
+            <>
+              <div ref={loopMarkerRef} className="h-px w-px shrink-0" aria-hidden="true" />
+              <div className="contents" aria-hidden="true" inert>
+                <SpotlightCard item={spotlight} index={0} />
+                {rest.map((item, i) => (
+                  <NumberedCard key={`loop-${item.id ?? item.slug ?? `nr-${i}`}`} item={item} rank={i + 2} />
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
     </section>
   )
 }
+

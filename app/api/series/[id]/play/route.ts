@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { recordContentEvent, setActionCookie } from '@/lib/analytics/server'
 
 export async function POST(
   request: NextRequest,
@@ -15,7 +16,8 @@ export async function POST(
       },
     })
 
-    return NextResponse.json({ success: true, viewCount: series.viewCount })
+    const recorded = await recordContentEvent(request, 'content_view', id, 'series')
+    return setActionCookie(NextResponse.json({ success: true, viewCount: series.viewCount }), recorded.cookieKey, request)
   } catch (error) {
     console.error('Error incrementing series play count:', error)
     return NextResponse.json({ error: 'Failed to record play' }, { status: 500 })

@@ -59,7 +59,7 @@ export function HeroBanner({ movies }: HeroBannerProps) {
   const image = hero.backdropUrl ?? hero.posterUrl ?? '/hero-backdrop.png'
   const isSeries = hero.itemType === 'series'
   
-  const watchUrl = isSeries ? `/series/${hero.slug ?? hero.id}` : `/watch/${hero.id}`
+  const watchUrl = isSeries ? `/series/${hero.slug ?? hero.id}` : `/movie/${hero.slug ?? hero.id}`
   const infoUrl = isSeries ? `/series/${hero.slug ?? hero.id}` : `/movie/${hero.slug ?? hero.id}`
 
   return (

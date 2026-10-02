@@ -1,7 +1,8 @@
 import Image from 'next/image'
+import { AdSenseAd } from '@/components/ads/AdSenseAd'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { Calendar, Clock, Play, Star, Download } from 'lucide-react'
+import { Calendar, Clock, Play, Star, Download, Mic } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ContentRow } from '@/components/content/ContentRow'
@@ -9,6 +10,8 @@ import { PlayButton } from '@/components/content/PlayButton'
 import { prisma } from '@/lib/prisma'
 import { formatRuntime, isExternalVideoUrl } from '@/lib/utils'
 import { WatchLaterButton } from './WatchLaterButton'
+import { extractTranslator, stripTranslator } from '@/lib/translator'
+import { getRelatedMovies } from '@/lib/related-movies'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,17 +40,10 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
     },
   })
 
-  if (!movie) notFound()
+  if (!movie || !movie.published) notFound()
 
-  const related = await prisma.movie.findMany({
-    where: {
-      id: { not: movie.id },
-      published: true,
-      genres: { some: { genreId: { in: movie.genres.map((item) => item.genreId) } } },
-    },
-    take: 12,
-    include: { genres: { include: { genre: true } } },
-  })
+  const related = await getRelatedMovies(movie.id, movie.genres.map(item => item.genreId))
+  const translator = extractTranslator(movie.description)
 
   const watchParts = [
     ...(movie.videoUrl
@@ -99,7 +95,13 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
             ) : null}
             {movie.contentRating ? <Badge variant="outline">{movie.contentRating.replace('_', '-')}</Badge> : null}
           </div>
-          <p className="mt-5 max-w-3xl text-lg leading-8 text-white/78">{movie.description}</p>
+          {translator ? (
+            <p className="mt-5 flex items-start gap-2 font-semibold text-red-400 [text-shadow:0_0_14px_rgba(229,9,20,0.45)]">
+              <Mic aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+              <span className="min-w-0 break-words">Translator: {translator}</span>
+            </p>
+          ) : null}
+          <p className="mt-5 max-w-3xl break-words text-lg leading-8 text-white/78">{stripTranslator(movie.description)}</p>
           <div className="mt-7 flex flex-wrap gap-3">
             {isExternalVideoUrl(movie.videoUrl) ? (
               <PlayButton
@@ -186,6 +188,23 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
               Actors: {movie.actors.map(({ person }) => person.name).join(', ') || 'To be announced'}
             </p>
           </div>
+
+        </div>
+        <aside className="space-y-4 rounded-md border border-white/10 bg-white/[0.03] p-5">
+          <h2 className="font-display text-xl font-bold">Details</h2>
+          <p className="text-sm text-white/65">Languages: {movie.languages.map(({ language }) => language.name).join(', ') || 'English'}</p>
+          <p className="text-sm text-white/65">Subtitles: {movie.subtitles.map((subtitle) => subtitle.label).join(', ') || 'Available soon'}</p>
+          <p className="text-sm text-white/65">Runtime: {formatRuntime(movie.runtimeMinutes)}</p>
+          <p className="text-sm text-white/65">Ratings: {movie.ratingCount.toLocaleString()} reviews</p>
+        </aside>
+      </section>
+
+      {related.length > 0 && <div className="mt-12">
+        <ContentRow title="Related Movies" items={related} />
+      </div>}
+
+      <AdSenseAd key={movie.id} />
+      <section className="px-4 md:px-8 lg:px-12">
           <div>
             <h2 className="mb-3 font-display text-2xl font-bold">Comments</h2>
             <div className="space-y-3">
@@ -201,19 +220,7 @@ export default async function MoviePage({ params }: { params: Promise<{ slug: st
               )}
             </div>
           </div>
-        </div>
-        <aside className="space-y-4 rounded-md border border-white/10 bg-white/[0.03] p-5">
-          <h2 className="font-display text-xl font-bold">Details</h2>
-          <p className="text-sm text-white/65">Languages: {movie.languages.map(({ language }) => language.name).join(', ') || 'English'}</p>
-          <p className="text-sm text-white/65">Subtitles: {movie.subtitles.map((subtitle) => subtitle.label).join(', ') || 'Available soon'}</p>
-          <p className="text-sm text-white/65">Runtime: {formatRuntime(movie.runtimeMinutes)}</p>
-          <p className="text-sm text-white/65">Ratings: {movie.ratingCount.toLocaleString()} reviews</p>
-        </aside>
       </section>
-
-      <div className="mt-12">
-        <ContentRow title="Related Movies" items={related} />
-      </div>
     </main>
   )
 }

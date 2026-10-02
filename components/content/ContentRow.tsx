@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { MediaCard } from '@/components/content/MediaCard'
-import { demoPosters } from '@/lib/catalog'
+import { demoPosters } from '@/lib/demo-posters'
 import { extractTranslator } from '@/lib/translator'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 

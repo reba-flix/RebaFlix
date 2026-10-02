@@ -15,6 +15,8 @@ interface Message {
   isSuperAdmin?: boolean
 }
 
+const WHATSAPP_GROUP_URL = 'https://chat.whatsapp.com/JBqEezxcNmA7v18YkK5cq8?mode=gi_t'
+
 export function SupportChat() {
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
@@ -158,17 +160,41 @@ export function SupportChat() {
       {/* Floating Button */}
       <AnimatePresence>
         {!open && (
-          <motion.button
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            onClick={() => setOpen(true)}
-            className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-[#E50914] hover:bg-[#c0070f] shadow-2xl shadow-[#E50914]/40 flex items-center justify-center transition-colors group"
-            aria-label="Open global chat"
-          >
-            <MessageCircle className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
-            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-black animate-pulse" />
-          </motion.button>
+          <>
+            <motion.a
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              href={WHATSAPP_GROUP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="fixed bottom-24 right-6 z-[9999] w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#1fb457] shadow-2xl shadow-[#25D366]/30 flex items-center justify-center transition-colors group"
+              aria-label="Join RebaFlix WhatsApp Group"
+            >
+              <span className="pointer-events-none absolute right-full mr-3 hidden whitespace-nowrap rounded-md bg-black/85 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 sm:block">
+                Join WhatsApp Group
+              </span>
+              <svg
+                viewBox="0 0 32 32"
+                aria-hidden="true"
+                className="w-7 h-7 text-white group-hover:scale-110 transition-transform"
+                fill="currentColor"
+              >
+                <path d="M16.02 4C9.4 4 4.02 9.38 4.02 16c0 2.15.58 4.25 1.69 6.08L4 28l6.08-1.6A11.9 11.9 0 0 0 16.02 28c6.62 0 12-5.38 12-12s-5.38-12-12-12Zm0 21.82c-1.84 0-3.63-.51-5.19-1.47l-.37-.23-3.61.95.96-3.52-.24-.37A9.75 9.75 0 0 1 6.2 16c0-5.41 4.4-9.82 9.82-9.82 5.41 0 9.82 4.41 9.82 9.82s-4.41 9.82-9.82 9.82Zm5.39-7.35c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.95 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.48-1.76-1.65-2.05-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.01-1.04 2.47s1.07 2.88 1.22 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.08 1.75-.72 2-1.41.25-.69.25-1.29.17-1.41-.07-.13-.27-.2-.57-.35Z" />
+              </svg>
+            </motion.a>
+            <motion.button
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              onClick={() => setOpen(true)}
+              className="fixed bottom-6 right-6 z-[9999] w-14 h-14 rounded-full bg-[#E50914] hover:bg-[#c0070f] shadow-2xl shadow-[#E50914]/40 flex items-center justify-center transition-colors group"
+              aria-label="Open global chat"
+            >
+              <MessageCircle className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+              <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-black animate-pulse" />
+            </motion.button>
+          </>
         )}
       </AnimatePresence>
 

@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ["@prisma/client", ".prisma/client", "@prisma\\client", ".prisma\\client"],
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
@@ -112,3 +114,6 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
+initOpenNextCloudflareForDev();

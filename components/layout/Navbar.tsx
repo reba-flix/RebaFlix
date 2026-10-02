@@ -1,17 +1,18 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  Search, Bell, ChevronDown, Menu, X, User, Heart,
+  Bell, ChevronDown, Menu, X, User, Heart,
   Clock, LogOut, Settings, Shield, Bookmark, PlayCircle
 } from 'lucide-react'
 import { useAuth } from '@/hooks/use-auth'
 import { BrandLogo } from '@/components/brand/BrandLogo'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { HeaderSearch } from './HeaderSearch'
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -23,8 +24,6 @@ const navLinks = [
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false)
-  const [showSearch, setShowSearch] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showNotifications, setShowNotifications] = useState(false)
@@ -39,7 +38,6 @@ export function Navbar() {
     latestEpisodeNumber?: number
     partCount?: number
   }[]>([])
-  const searchRef = useRef<HTMLInputElement>(null)
   const { user, isAdmin, signOut } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
@@ -65,22 +63,6 @@ export function Navbar() {
     
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
-
-  // Focus search input when opened
-  useEffect(() => {
-    if (showSearch && searchRef.current) {
-      searchRef.current.focus()
-    }
-  }, [showSearch])
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
-      setShowSearch(false)
-      setSearchQuery('')
-    }
-  }
 
   const handleSignOut = async () => {
     await signOut()
@@ -117,7 +99,7 @@ export function Navbar() {
           {/* Logo */}
           <div className="flex items-center gap-8">
             <Link href="/" className="flex flex-shrink-0 items-center" aria-label="RebaFlix home">
-              <BrandLogo className="h-12 md:h-14" showName priority />
+              <BrandLogo className="h-10 sm:h-12 md:h-14 max-[400px]:[&>span:last-child]:hidden" showName priority />
             </Link>
 
             {/* Desktop Nav Links */}
@@ -159,7 +141,7 @@ export function Navbar() {
             </div>
 
             {/* Mobile Browse Menu */}
-            <div className="flex lg:hidden">
+            <div className="hidden sm:flex lg:hidden">
               <button
                 onClick={() => setShowMobileMenu(true)}
                 className="flex items-center gap-1 text-sm text-white/80 hover:text-white"
@@ -171,49 +153,7 @@ export function Navbar() {
 
           {/* Right Side */}
           <div className="flex items-center gap-2 md:gap-4">
-            {/* Search */}
-            <AnimatePresence mode="wait">
-              {showSearch ? (
-                <motion.form
-                  key="search-form"
-                  initial={{ width: 0, opacity: 0 }}
-                  animate={{ width: '220px', opacity: 1 }}
-                  exit={{ width: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  onSubmit={handleSearch}
-                  className="flex items-center bg-black/80 border border-white/30 rounded-md overflow-hidden"
-                >
-                  <Search className="w-4 h-4 text-white/60 ml-3 flex-shrink-0" />
-                  <input
-                    ref={searchRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search titles..."
-                    className="flex-1 bg-transparent px-2 py-2 text-sm text-white placeholder:text-white/40 outline-none min-w-0"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => { setShowSearch(false); setSearchQuery('') }}
-                    className="p-2 text-white/60 hover:text-white"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </motion.form>
-              ) : (
-                <motion.button
-                  key="search-icon"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setShowSearch(true)}
-                  className="p-2 text-white/80 hover:text-white transition-colors"
-                  aria-label="Search"
-                >
-                  <Search className="w-5 h-5" />
-                </motion.button>
-              )}
-            </AnimatePresence>
+            <HeaderSearch />
 
             {/* Notifications */}
             {user && (
@@ -379,7 +319,7 @@ export function Navbar() {
                     Sign In
                   </Button>
                 </Link>
-                <Link href="/register">
+                <Link href="/register" className="hidden sm:block">
                   <Button size="sm" className="text-xs px-2.5 py-1.5 h-8 sm:text-sm sm:px-3 sm:h-9">
                     Get Started
                   </Button>
@@ -389,6 +329,7 @@ export function Navbar() {
 
             {/* Mobile Menu Toggle */}
             <button
+              aria-label="Open navigation menu"
               className="lg:hidden p-2 text-white"
               onClick={() => setShowMobileMenu(!showMobileMenu)}
             >

@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import { Inter, Outfit, Archivo_Black } from 'next/font/google'
 import { Navbar } from '@/components/layout/Navbar'
 import { RootChrome } from '@/components/layout/RootChrome'
@@ -45,6 +46,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${outfit.variable} ${archivoBlack.variable} font-sans antialiased flex flex-col min-h-screen`}>
+        <Script
+          id="google-adsense"
+          async
+          strategy="afterInteractive"
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-5402413673980287"
+          crossOrigin="anonymous"
+        />
         <Navbar />
         <main className="flex-grow">
           {children}
@@ -55,3 +63,4 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   )
 }
+

@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useWatchAnalytics } from '@/hooks/use-watch-analytics'
 
 type SubtitleTrack = { src: string; label: string; srcLang: string; default?: boolean }
 
@@ -76,6 +77,7 @@ export function VideoPlayer({
 }: VideoPlayerProps) {
   const router = useRouter()
   const videoRef = useRef<HTMLVideoElement>(null)
+  useWatchAnalytics(videoRef, currentEpisodeId || contentId, contentType === 'episode' ? 'episode' : currentEpisodeId && currentEpisodeId !== contentId ? 'part' : 'movie', src)
   const containerRef = useRef<HTMLDivElement>(null)
   const volumeSliderRef = useRef<HTMLDivElement>(null)
 
@@ -254,8 +256,8 @@ export function VideoPlayer({
         : contentType === 'series'
         ? `/api/series/${contentId}/play`
         : `/api/movies/${contentId}/play`
-    fetch(endpoint, { method: 'POST' }).catch(console.warn)
-  }, [contentId, contentType])
+    fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ partId: contentType === 'movie' && currentEpisodeId !== contentId ? currentEpisodeId : undefined }) }).catch(console.warn)
+  }, [contentId, contentType, currentEpisodeId])
 
   // HLS / direct video source
   useEffect(() => {
@@ -438,6 +440,7 @@ export function VideoPlayer({
 
   const handleEnded = () => {
     setPlaying(false)
+    hasCounted.current = false
     if (!nextItem) return
     // Start 3-second countdown
     setCountdown(3)

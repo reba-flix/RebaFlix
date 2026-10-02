@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { recordContentEvent, setActionCookie } from '@/lib/analytics/server'
 import { generatePresignedDownloadUrl } from '@/lib/storage'
 
 export const dynamic = 'force-dynamic'
@@ -47,5 +48,7 @@ export async function GET(
   const signedDownloadUrl = await generatePresignedDownloadUrl(episode.videoUrl, filename)
   const downloadUrl = signedDownloadUrl ?? episode.videoUrl
 
-  return NextResponse.redirect(new URL(downloadUrl, request.url))
+  const response = NextResponse.redirect(new URL(downloadUrl, request.url))
+  const recorded = await recordContentEvent(request, 'content_download', id, 'episode')
+  return setActionCookie(response, recorded.cookieKey, request)
 }

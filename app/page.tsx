@@ -1,10 +1,12 @@
 import { ContentRow } from '@/components/content/ContentRow'
+import { AdSenseAd } from '@/components/ads/AdSenseAd'
 import { NewReleasesRow } from '@/components/content/NewReleasesRow'
 import { HeroBanner } from '@/components/content/HeroBanner'
 import { fallbackRows } from '@/lib/catalog'
 import { getHomeCatalog } from '@/lib/catalog'
 import { getSessionUser } from '@/lib/auth'
 import { getRecommendedForUser } from '@/lib/recommendations'
+import { getActivePromotionItems } from '@/lib/homepage-promotions'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,12 +22,14 @@ function fallbackItems(names: string[]) {
 export default async function HomePage() {
   let catalog: Awaited<ReturnType<typeof getHomeCatalog>> | null = null
   let recommended: Awaited<ReturnType<typeof getRecommendedForUser>> = []
+  let promoted: Awaited<ReturnType<typeof getActivePromotionItems>> = []
 
   try {
     const user = await getSessionUser()
-    ;[catalog, recommended] = await Promise.all([
+    ;[catalog, recommended, promoted] = await Promise.all([
       getHomeCatalog(),
       getRecommendedForUser(user?.id),
+      getActivePromotionItems(),
     ])
   } catch {
     catalog = null
@@ -89,10 +93,13 @@ export default async function HomePage() {
     <main className="min-h-screen space-y-8 pb-16">
       <HeroBanner movies={featuredContent} />
       <NewReleasesRow items={mixedNewReleases} />
+      <AdSenseAd />
+      <ContentRow title="Featured Picks" items={promoted} />
       <ContentRow title="Trending" items={trending} />
       <ContentRow title="Popular" items={popular} />
       <ContentRow title="Recommended" items={recommended.length ? recommended : topRated} />
       <ContentRow title="Top Rated" items={topRated} />
+      <AdSenseAd />
       <ContentRow title="Recently Added" items={rawNewReleases} />
       <ContentRow title="TV Series" items={catalog?.series ?? fallbackItems(['The Hills', 'Campus 250', 'Market Queens'])} type="series" />
       <ContentRow title="Kids" items={catalog?.kids || []} />

@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider   = "prisma-client-js"
+  engineType = "client"
 }
 
 datasource db {
@@ -37,6 +38,11 @@ enum NotificationChannel {
   EMAIL
   PUSH
   IN_APP
+}
+
+enum PromotionContentType {
+  MOVIE
+  SERIES
 }
 
 enum ContentRating {
@@ -149,6 +155,7 @@ model Movie {
   ratings        Rating[]
   recommendations Recommendation[]
   advertisements Advertisement[]
+  homepagePromotions HomepagePromotion[]
 
   @@index([published, featured])
   @@index([releaseDate])
@@ -200,6 +207,7 @@ model Series {
   watchLater     WatchLater[]
   comments       Comment[]
   ratings        Rating[]
+  homepagePromotions HomepagePromotion[]
 }
 
 model Season {
@@ -551,10 +559,102 @@ model AnalyticsEvent {
   metadata  Json?
   createdAt DateTime @default(now())
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  dedupeKey String?  @unique
+  contentId String?
+  parentId  String?
+  viewerKey String?
+  device    String?
 
   @@index([name, createdAt])
+  @@index([contentId, name, createdAt])
+  @@index([parentId, name, createdAt])
+  @@index([viewerKey, name, createdAt])
 }
 
+model ViewingSession {
+  id             String   @id
+  viewerKey      String
+  contentId      String
+  parentId       String
+  duration       Float
+  seconds        Float    @default(0)
+  coveredSeconds Float    @default(0)
+  ranges         Json     @default("[]")
+  sequence       Int      @default(0)
+  completed      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([contentId, createdAt])
+  @@index([parentId, createdAt])
+  @@index([viewerKey, updatedAt])
+}
+
+// Consent-exempt candidate: permanent records contain only daily content buckets.
+model ContentDailyAnalytics {
+  date            DateTime @db.Date
+  contentId       String
+  parentId        String
+  contentType     String
+  deviceCategory  String
+  viewCount       Int      @default(0)
+  downloadCount   Int      @default(0)
+  watchSeconds    Float    @default(0)
+  playCount       Int      @default(0)
+  completedCount  Int      @default(0)
+
+  @@id([date, contentId, deviceCategory])
+  @@index([date, contentType])
+  @@index([date, parentId])
+}
+
+// Short-lived calculation/idempotency state only; never exposed to admin reports.
+model AnalyticsPlaybackState {
+  id              String   @id
+  contentId       String
+  parentId        String
+  contentType     String
+  deviceCategory  String
+  duration        Float
+  sequence        Int      @default(0)
+  ranges          Json     @default("[]")
+  coveredSeconds  Float    @default(0)
+  completed       Boolean  @default(false)
+  lastAcceptedAt  DateTime @default(now())
+  expiresAt       DateTime
+
+  @@index([expiresAt])
+}
+
+model AnalyticsActionDedupe {
+  id             String   @id
+  actionKey      String
+  contentId      String
+  eventName      String
+  expiresAt      DateTime
+
+  @@unique([actionKey, contentId, eventName])
+  @@index([expiresAt])
+}
+
+model HomepagePromotion {
+  id          String               @id @default(cuid())
+  contentType PromotionContentType
+  movieId     String?
+  seriesId    String?
+  sortOrder   Int
+  active      Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  movie       Movie?               @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  series      Series?              @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  @@unique([movieId])
+  @@unique([seriesId])
+  @@index([active, sortOrder])
+  @@index([contentType])
+}
 model Setting {
   key       String   @id
   value     Json
@@ -573,6 +673,20 @@ model Advertisement {
   endsAt    DateTime?
   createdAt DateTime @default(now())
   movie     Movie?   @relation(fields: [movieId], references: [id], onDelete: SetNull)
+}
+
+model AdSenseConnection {
+  id                    String   @id @default(cuid())
+  provider              String   @unique @default("google_adsense")
+  accountName           String
+  accountDisplayName    String?
+  publisherId           String?
+  reportingCurrencyCode String?
+  encryptedRefreshToken String
+  scope                 String
+  connectedAt           DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  lastSuccessfulSyncAt  DateTime?
 }
 
 model SupportMessage {
@@ -596,3 +710,4 @@ model NewsletterSubscriber {
   email     String   @unique
   createdAt DateTime @default(now())
 }
+
